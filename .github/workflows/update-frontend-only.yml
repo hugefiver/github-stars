@@ -1,0 +1,42 @@
+name: Update Frontend Only
+
+on:
+  workflow_dispatch: # 允许手动触发
+
+jobs:
+  update-frontend:
+    runs-on: ubuntu-latest
+    
+    permissions: 
+      contents: write 
+      pages: write 
+      id-token: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+          
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 10
+      
+      - name: Setup Node.js for frontend
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: 'pnpm'
+          cache-dependency-path: pnpm-lock.yaml
+          
+      - name: Install frontend dependencies
+        run: pnpm install
+          
+      - name: Build frontend
+        run: pnpm run build
+          
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./dist
+          keep_files: true

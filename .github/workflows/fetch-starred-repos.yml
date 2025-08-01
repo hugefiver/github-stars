@@ -8,8 +8,11 @@ on:
   push:
     branches:
       - master
-    paths-ignore:
-      - 'docs/**'
+    # paths-ignore:
+    #   - 'docs/**'
+    paths:
+      - '.github/workflows/fetch-starred-repos.yml'
+      - 'action/**'
 
 jobs:
   fetch-starred-repos:
