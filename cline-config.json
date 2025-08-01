@@ -51,6 +51,17 @@
         "privacy": "建议将仓库设为私有以保护隐私。"
       }
     },
+    "hooks": {
+      "pre_commit": [
+        {
+          "name": "Build action directory",
+          "description": "如果对代码的修改涉及./action目录，则在提交之前需要在./action目录运行一次pnpm run build",
+          "condition": "modified_files.includes('./action') || modified_files.some(file => file.startsWith('./action/'))",
+          "command": "cd ./action && pnpm run build",
+          "required": true
+        }
+      ]
+    },
     "context": {
       "current_focus": "前端开发和用户体验优化",
       "data_format": "JSON格式存储仓库信息，包含名称、描述、语言、星数、fork数、主题等",
