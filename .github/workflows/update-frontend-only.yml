@@ -16,23 +16,6 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
           
-      - name: Download data directory from target branch
-        run: |
-          # Get the current branch name
-          CURRENT_BRANCH=${GITHUB_REF#refs/heads/}
-          echo "Current branch: $CURRENT_BRANCH"
-          
-          # Create data directory if it doesn't exist
-          mkdir -p data
-          
-          # Download data directory from the gh-pages branch
-          echo "Downloading data directory from gh-pages branch..."
-          # Fetch the gh-pages branch
-          git fetch origin gh-pages
-          # Checkout data directory from gh-pages branch
-          git checkout origin/gh-pages -- data/
-          echo "Data directory downloaded from gh-pages branch"
-          
       - name: Setup pnpm
         uses: pnpm/action-setup@v3
         with:
@@ -50,6 +33,17 @@ jobs:
           
       - name: Build frontend
         run: pnpm run build
+          
+      - name: Download data directory from gh-pages branch to dist
+        run: |
+          echo "Downloading data directory from gh-pages branch to dist..."
+          # Fetch the gh-pages branch
+          git fetch origin gh-pages
+          # Checkout data directory from gh-pages branch to dist directory
+          git checkout origin/gh-pages -- data/
+          # Copy data directory to dist folder
+          cp -r data/ dist/
+          echo "Data directory copied to dist directory"
           
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
