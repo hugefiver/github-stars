@@ -2,45 +2,10 @@ import * as core from '@actions/core';
 import { graphql } from "@octokit/graphql";
 import * as fs from "fs";
 import * as path from "path";
-
-interface RepositoryNode {
-  id: string;
-  name: string;
-  nameWithOwner: string;
-  description: string | null;
-  url: string;
-  primaryLanguage: {
-    name: string;
-  } | null;
-  languages: {
-    edges: Array<{
-      node: {
-        name: string;
-      };
-      size: number;
-    }>;
-    totalSize: number;
-  } | null;
-  stargazerCount: number;
-  forkCount: number;
-  updatedAt: string;
-  createdAt: string;
-  owner: {
-    login: string;
-    avatarUrl: string;
-    url: string;
-  };
-  repositoryTopics: {
-    nodes: Array<{
-      topic: {
-        name: string;
-      };
-    }>;
-  } | null;
-}
+import { GraphQLRepository } from "./types/github";
 
 interface StarredRepositoryEdge {
-  node: RepositoryNode;
+  node: GraphQLRepository;
   starredAt: string;
 }
 
@@ -208,7 +173,7 @@ async function run() {
 
         // 处理topics
         const topics = repo.repositoryTopics ? 
-          repo.repositoryTopics.nodes.map(node => node.topic.name) : [];
+          repo.repositoryTopics.nodes.map(node => node.node.topic.name) : [];
 
         processedRepos.push({
           id: parseInt(repo.id.replace(/[^0-9]/g, '')),
