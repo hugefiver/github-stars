@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import MiniSearch from 'minisearch';
 import './App.css';
 
 function App() {
@@ -9,7 +10,11 @@ function App() {
   // 搜索状态
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedLanguage, setSelectedLanguage] = useState('');
+  const [selectedTag, setSelectedTag] = useState('');
   const [sortBy, setSortBy] = useState('created');
+  
+  // MiniSearch 实例
+  const [searchIndex, setSearchIndex] = useState(null);
   
   // 无限滚动状态
   const [displayedCount, setDisplayedCount] = useState(10);
@@ -39,6 +44,29 @@ function App() {
     }
   };
 
+  // 初始化 MiniSearch 索引
+  useEffect(() => {
+    const miniSearch = new MiniSearch({
+      fields: ['name', 'full_name', 'description', 'language', 'topics'],
+      storeFields: ['id', 'name', 'full_name', 'description', 'language', 'topics', 'html_url', 'stargazers_count', 'forks_count', 'updated_at', 'created_at'],
+      searchOptions: {
+        boost: { name: 2, full_name: 2, topics: 1.5 },
+        fuzzy: 0.2,
+        prefix: true
+      }
+    });
+    setSearchIndex(miniSearch);
+  }, []);
+
+  // 当数据加载完成后，添加到搜索索引
+  useEffect(() => {
+    if (searchIndex && repos.length > 0) {
+      // 先清空索引，然后重新添加所有数据
+      searchIndex.removeAll();
+      searchIndex.addAll(repos);
+    }
+  }, [repos, searchIndex]);
+
   // 初始加载数据
   useEffect(() => {
     fetchData(dataUrl);
@@ -55,24 +83,60 @@ function App() {
     return Array.from(langSet).sort();
   }, [repos]);
 
+  // 获取所有标签
+  const allTags = useMemo(() => {
+    const tagSet = new Set();
+    repos.forEach(repo => {
+      if (repo.topics) {
+        repo.topics.forEach(topic => {
+          tagSet.add(topic);
+        });
+      }
+    });
+    return Array.from(tagSet).sort();
+  }, [repos]);
+
   // 过滤和排序数据
   const filteredAndSortedRepos = useMemo(() => {
-    let result = repos.filter(repo => {
-      // 搜索过滤
-      const matchesSearch = 
-        !searchTerm ||
-        repo.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (repo.description && repo.description.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        repo.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        repo.topics.some(topic => topic.toLowerCase().includes(searchTerm.toLowerCase()));
+    let result = [];
+
+    // 使用 MiniSearch 进行搜索
+    if (searchTerm && searchIndex) {
+      const searchResults = searchIndex.search(searchTerm, {
+        filter: (result) => {
+          // 语言过滤
+          if (selectedLanguage && result.language !== selectedLanguage) {
+            return false;
+          }
+          // 标签过滤
+          if (selectedTag && (!result.topics || !result.topics.includes(selectedTag))) {
+            return false;
+          }
+          return true;
+        }
+      });
       
-      // 语言过滤
-      const matchesLanguage = 
-        !selectedLanguage ||
-        repo.language === selectedLanguage;
-      
-      return matchesSearch && matchesLanguage;
-    });
+      // 获取完整的仓库对象
+      result = searchResults.map(result => {
+        const repo = repos.find(r => r.id === result.id);
+        return repo;
+      }).filter(Boolean);
+    } else {
+      // 如果没有搜索词，使用原始数据进行过滤
+      result = repos.filter(repo => {
+        // 语言过滤
+        const matchesLanguage = 
+          !selectedLanguage ||
+          repo.language === selectedLanguage;
+        
+        // 标签过滤
+        const matchesTag = 
+          !selectedTag ||
+          (repo.topics && repo.topics.includes(selectedTag));
+        
+        return matchesLanguage && matchesTag;
+      });
+    }
 
     // 排序
     result.sort((a, b) => {
@@ -93,7 +157,7 @@ function App() {
     });
 
     return result;
-  }, [repos, searchTerm, selectedLanguage, sortBy]);
+  }, [repos, searchTerm, selectedLanguage, selectedTag, sortBy, searchIndex]);
 
   // 显示的数据
   const displayedRepos = useMemo(() => {
@@ -103,7 +167,7 @@ function App() {
   // 重置显示数量
   useEffect(() => {
     setDisplayedCount(itemsPerLoad);
-  }, [searchTerm, selectedLanguage, sortBy]);
+  }, [searchTerm, selectedLanguage, selectedTag, sortBy]);
 
   // 无限滚动处理
   useEffect(() => {
@@ -206,6 +270,17 @@ function App() {
               <option value="">All Languages</option>
               {languages.map(lang => (
                 <option key={lang} value={lang}>{lang}</option>
+              ))}
+            </select>
+            
+            <select
+              value={selectedTag}
+              onChange={(e) => setSelectedTag(e.target.value)}
+              className="filter-select"
+            >
+              <option value="">All Tags</option>
+              {allTags.map(tag => (
+                <option key={tag} value={tag}>{tag}</option>
               ))}
             </select>
             
