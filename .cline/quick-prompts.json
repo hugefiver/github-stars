@@ -2,52 +2,87 @@
   "ai_generated": true,
   "created_by": "Cline",
   "created_at": "2025-08-01",
+  "updated_at": "2025-08-02",
   "project": {
     "name": "GitHub Stars Search",
-    "type": "React Web Application",
-    "description": "GitHub星标仓库搜索和浏览工具"
+    "type": "React Web Application with GitHub Action",
+    "description": "完全由AI生成的GitHub星标仓库搜索和浏览工具，包含可重用的GitHub Action"
   },
   "development": {
-    "setup": "使用 pnpm install 安装依赖，pnpm run dev 启动开发服务器",
-    "build": "使用 pnpm run build 构建生产版本",
-    "tech_stack": ["React", "Vite", "CSS3", "MiniSearch", "GitHub Actions"]
+    "setup": "使用 pnpm install 安装前端依赖，cd action && pnpm install 安装Action依赖，pnpm run dev 启动开发服务器",
+    "build": "使用 pnpm run build 构建前端，cd action && pnpm run build 构建Action",
+    "tech_stack": ["React 18", "TypeScript", "Vite", "CSS3", "MiniSearch", "GitHub Actions", "Node.js 24", "GraphQL"],
+    "package_manager": "pnpm"
   },
   "features": {
     "core": [
       "搜索GitHub星标仓库",
       "按语言过滤",
       "多种排序方式",
-      "响应式设计"
+      "响应式设计",
+      "无限滚动加载",
+      "自定义数据源"
     ],
     "advanced": [
       "全文搜索（MiniSearch）",
-      "无限滚动",
-      "自定义数据源",
-      "GitHub Actions自动同步"
+      "GraphQL API数据获取",
+      "可重用GitHub Action",
+      "编程语言统计可视化",
+      "仓库主题标签展示",
+      "GitHub Pages自动部署"
     ]
   },
   "file_structure": {
-    "main": "src/App.jsx - 主应用组件",
-    "styles": "src/App.css - 应用样式",
-    "data": "data/ - 存储星标仓库JSON数据",
-    "action": "action/ - GitHub Action代码",
-    "workflows": ".github/workflows/ - GitHub Actions配置"
+    "main": "src/App.tsx - 主应用组件（TypeScript）",
+    "entry": "src/main.tsx - 应用入口文件",
+    "styles": "src/App.css - 应用样式（CSS3 + CSS变量）",
+    "types": "src/types/ - TypeScript类型定义目录",
+    "data": "docs/data/ - 存储星标仓库JSON数据（GitHub Pages）",
+    "action": "action/ - GitHub Action源代码（TypeScript）",
+    "action_main": "action/src/index.ts - Action主要逻辑",
+    "action_types": "action/src/types/ - Action类型定义",
+    "scripts": "scripts/ - 测试和模拟脚本",
+    "workflows": ".github/workflows/ - GitHub Actions配置",
+    "build_output": "docs/ - 构建输出目录（GitHub Pages）"
   },
   "key_libraries": {
-    "search": "MiniSearch - 全文搜索",
-    "api": "@octokit/rest - GitHub API客户端",
-    "build": "Vite - 构建工具",
-    "ui": "React - 用户界面"
+    "search": "MiniSearch - 高性能全文搜索",
+    "api": "@octokit/graphql, @octokit/rest - GitHub API客户端",
+    "build": "Vite - 前端构建工具，@vercel/ncc - Action构建工具",
+    "ui": "React 18 - 用户界面框架",
+    "types": "TypeScript - 类型安全",
+    "action": "@actions/core, @actions/github - GitHub Actions核心库"
   },
   "deployment": {
     "platform": "GitHub Pages",
     "build_command": "pnpm run build",
-    "output_dir": "dist"
+    "output_dir": "docs",
+    "action_build": "cd action && pnpm run build",
+    "action_output": "action/dist",
+    "ci_cd": "GitHub Actions（自动构建和部署）"
   },
   "common_tasks": {
-    "add_feature": "在src/App.jsx中添加新功能，更新src/App.css样式",
-    "fix_bug": "检查React组件逻辑和数据处理，验证MiniSearch配置",
-    "update_data": "运行GitHub Action或手动更新data/目录中的JSON文件",
-    "optimize": "使用useMemo优化性能，检查搜索和过滤逻辑"
+    "add_feature": "在src/App.tsx中添加新功能，更新src/App.css样式，添加相应的TypeScript类型定义",
+    "fix_bug": "检查React组件逻辑和数据处理，验证MiniSearch配置，检查TypeScript类型定义",
+    "update_data": "运行GitHub Action或手动更新docs/data/目录中的JSON文件，测试GraphQL查询",
+    "optimize": "使用useMemo优化性能，检查搜索和过滤逻辑，优化Action的GraphQL查询",
+    "test_action": "运行node scripts/test-graphql-query.cjs测试查询，node scripts/simulate-action.cjs模拟Action",
+    "build_deploy": "运行pnpm run build构建前端，cd action && pnpm run build构建Action，提交代码触发自动部署"
+  },
+  "ai_policy": {
+    "requirement": "所有代码、文档、配置文件必须由AI生成",
+    "tech_stack": "必须使用项目指定的技术栈（React 18, TypeScript, Vite, GitHub Actions等）",
+    "quality": "生成的代码必须符合项目规范和最佳实践",
+    "testing": "所有生成的内容必须经过测试验证"
+  },
+  "commands": {
+    "install": "pnpm install",
+    "install_action": "cd action && pnpm install",
+    "dev": "pnpm run dev",
+    "build": "pnpm run build",
+    "build_action": "cd action && pnpm run build",
+    "preview": "pnpm run preview",
+    "test_graphql": "node scripts/test-graphql-query.cjs",
+    "simulate_action": "node scripts/simulate-action.cjs"
   }
 }
