@@ -25,6 +25,9 @@ function App() {
   // 设置状态
   const [showSettings, setShowSettings] = useState<boolean>(false);
   
+  // 仓库详情展开状态
+  const [expandedRepos, setExpandedRepos] = useState<Record<number, boolean>>({});
+  
   // 排序方向状态
   const [sortOrder, setSortOrder] = useState<string>('desc');
   // 在生产环境中使用完整版本，开发环境中使用简化版本
@@ -367,7 +370,7 @@ function App() {
             </div>
           ) : (
             displayedRepos.map(repo => {
-              const [isDetailsExpanded, setIsDetailsExpanded] = useState(true);
+              const isDetailsExpanded = expandedRepos[repo.id] !== false; // 默认展开
               return (
                 <div key={repo.id} className="repo-card">
                   <div className="repo-header">
@@ -386,7 +389,10 @@ function App() {
                   {/* 折叠/展开按钮 */}
                   <button 
                     className="repo-details-toggle"
-                    onClick={() => setIsDetailsExpanded(!isDetailsExpanded)}
+                    onClick={() => setExpandedRepos(prev => ({
+                      ...prev,
+                      [repo.id]: !isDetailsExpanded
+                    }))}
                   >
                     {isDetailsExpanded ? 'Hide Details' : 'Show Details'}
                   </button>
