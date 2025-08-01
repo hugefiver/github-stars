@@ -1,6 +1,7 @@
 const { Octokit } = require("@octokit/rest");
 const fs = require("fs");
 const path = require("path");
+require('dotenv').config();
 
 // 模拟修改后的 GitHub Action 的执行（完整版，使用GraphQL获取languages）
 async function simulateAction() {
@@ -40,10 +41,11 @@ async function simulateAction() {
                   hasNextPage
                   endCursor
                 }
-                nodes {
+                edges {
+                node {
                   id
                   name
-                  fullName
+                  nameWithOwner
                   description
                   url
                   primaryLanguage {
@@ -62,7 +64,6 @@ async function simulateAction() {
                   forkCount
                   updatedAt
                   createdAt
-                  starredAt
                   owner {
                     login
                     avatarUrl
@@ -76,6 +77,8 @@ async function simulateAction() {
                     }
                   }
                 }
+                starredAt
+              }
               }
             }
           }
@@ -97,16 +100,19 @@ async function simulateAction() {
           console.log(`Total starred repositories: ${totalCount}`);
         }
         
-        const nodes = starredRepos.nodes;
+        const edges = starredRepos.edges;
         
-        for (const repo of nodes) {
+        for (const edge of edges) {
+          const repo = edge.node;
+          const starredAt = edge.starredAt;
+          
           // 处理语言数据
           const languages = {};
           if (repo.languages && repo.languages.edges && repo.languages.totalSize > 0) {
             const totalSize = repo.languages.totalSize;
-            for (const edge of repo.languages.edges) {
-              const languageName = edge.node.name;
-              const size = edge.size;
+            for (const langEdge of repo.languages.edges) {
+              const languageName = langEdge.node.name;
+              const size = langEdge.size;
               languages[languageName] = {
                 bytes: size,
                 percentage: ((size / totalSize) * 100).toFixed(2)
@@ -121,7 +127,7 @@ async function simulateAction() {
           processedRepos.push({
             id: parseInt(repo.id.replace(/[^0-9]/g, '')),
             name: repo.name,
-            full_name: repo.fullName,
+            full_name: repo.nameWithOwner,
             html_url: repo.url,
             description: repo.description,
             language: repo.primaryLanguage ? repo.primaryLanguage.name : null,
@@ -130,7 +136,7 @@ async function simulateAction() {
             forks_count: repo.forkCount,
             updated_at: repo.updatedAt,
             created_at: repo.createdAt,
-            starred_at: repo.starredAt,
+            starred_at: starredAt,
             owner: {
               login: repo.owner.login,
               avatar_url: repo.owner.avatarUrl,
@@ -140,7 +146,7 @@ async function simulateAction() {
           });
         }
         
-        console.log(`Processed ${nodes.length} repositories, total: ${processedRepos.length}/${totalCount}`);
+        console.log(`Processed ${edges.length} repositories, total: ${processedRepos.length}/${totalCount}`);
         
         // 检查是否还有下一页
         hasNextPage = starredRepos.pageInfo.hasNextPage;

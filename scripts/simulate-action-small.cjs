@@ -37,41 +37,43 @@ async function simulateActionSmall() {
                 hasNextPage
                 endCursor
               }
-              nodes {
-                id
-                name
-                fullName
-                description
-                url
-                primaryLanguage {
+              edges {
+                node {
+                  id
                   name
-                }
-                languages(first: 10, orderBy: {field: SIZE, direction: DESC}) {
-                  edges {
-                    node {
-                      name
-                    }
-                    size
-                  }
-                  totalSize
-                }
-                stargazerCount
-                forkCount
-                updatedAt
-                createdAt
-                starredAt
-                owner {
-                  login
-                  avatarUrl
+                  nameWithOwner
+                  description
                   url
-                }
-                repositoryTopics(first: 10) {
-                  nodes {
-                    topic {
-                      name
+                  primaryLanguage {
+                    name
+                  }
+                  languages(first: 10, orderBy: {field: SIZE, direction: DESC}) {
+                    edges {
+                      node {
+                        name
+                      }
+                      size
+                    }
+                    totalSize
+                  }
+                  stargazerCount
+                  forkCount
+                  updatedAt
+                  createdAt
+                  owner {
+                    login
+                    avatarUrl
+                    url
+                  }
+                  repositoryTopics(first: 10) {
+                    nodes {
+                      topic {
+                        name
+                      }
                     }
                   }
                 }
+                starredAt
               }
             }
           }
@@ -92,16 +94,19 @@ async function simulateActionSmall() {
           console.log(`Total starred repositories: ${totalCount}`);
         }
         
-        const nodes = starredRepos.nodes;
+        const edges = starredRepos.edges;
         
-        for (const repo of nodes) {
+        for (const edge of edges) {
+          const repo = edge.node;
+          const starredAt = edge.starredAt;
+          
           // 处理语言数据
           const languages = {};
           if (repo.languages && repo.languages.edges && repo.languages.totalSize > 0) {
             const totalSize = repo.languages.totalSize;
-            for (const edge of repo.languages.edges) {
-              const languageName = edge.node.name;
-              const size = edge.size;
+            for (const langEdge of repo.languages.edges) {
+              const languageName = langEdge.node.name;
+              const size = langEdge.size;
               languages[languageName] = {
                 bytes: size,
                 percentage: ((size / totalSize) * 100).toFixed(2)
@@ -116,7 +121,7 @@ async function simulateActionSmall() {
           processedRepos.push({
             id: parseInt(repo.id.replace(/[^0-9]/g, '')),
             name: repo.name,
-            full_name: repo.fullName,
+            full_name: repo.nameWithOwner,
             html_url: repo.url,
             description: repo.description,
             language: repo.primaryLanguage ? repo.primaryLanguage.name : null,
@@ -125,7 +130,7 @@ async function simulateActionSmall() {
             forks_count: repo.forkCount,
             updated_at: repo.updatedAt,
             created_at: repo.createdAt,
-            starred_at: repo.starredAt,
+            starred_at: starredAt,
             owner: {
               login: repo.owner.login,
               avatar_url: repo.owner.avatarUrl,
@@ -135,7 +140,7 @@ async function simulateActionSmall() {
           });
         }
         
-        console.log(`Processed ${nodes.length} repositories, total: ${processedRepos.length}/${totalCount}`);
+        console.log(`Processed ${edges.length} repositories, total: ${processedRepos.length}/${totalCount}`);
         
         // 检查是否还有下一页
         hasNextPage = starredRepos.pageInfo.hasNextPage;
