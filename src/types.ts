@@ -15,6 +15,44 @@ export interface Repository {
   license?: {
     name: string;
   } | null;
+  licenseInfo?: {
+    key: string;
+    name: string;
+    spdxId: string;
+    url: string | null;
+  } | null;
+  fundingLinks?: {
+    platform: string;
+    url: string;
+  }[];
+  isArchived?: boolean;
+  isFork?: boolean;
+  parent?: {
+    name: string;
+    nameWithOwner: string;
+    url: string;
+  } | null;
+  isMirror?: boolean;
+  latestRelease?: {
+    name: string;
+    tagName: string;
+    createdAt: string;
+    url: string;
+  } | null;
+  milestones?: {
+    title: string;
+    description: string | null;
+    state: string;
+    dueOn: string | null;
+    url: string;
+  }[];
+  mirrorUrl?: string | null;
+  packages?: {
+    name: string;
+    packageType: string;
+    version: string | null;
+  }[];
+  pushedAt?: string;
 }
 
 export interface LanguageStat {

@@ -125,6 +125,44 @@ interface ProcessedRepository {
     html_url: string;
   };
   topics: string[];
+  licenseInfo: {
+    key: string;
+    name: string;
+    spdxId: string;
+    url: string | null;
+  } | null;
+  fundingLinks: {
+    platform: string;
+    url: string;
+  }[];
+  isArchived: boolean;
+  isFork: boolean;
+  parent: {
+    name: string;
+    nameWithOwner: string;
+    url: string;
+  } | null;
+  isMirror: boolean;
+  latestRelease: {
+    name: string;
+    tagName: string;
+    createdAt: string;
+    url: string;
+  } | null;
+  milestones: {
+    title: string;
+    description: string | null;
+    state: string;
+    dueOn: string | null;
+    url: string;
+  }[];
+  mirrorUrl: string | null;
+  packages: {
+    name: string;
+    packageType: string;
+    version: string | null;
+  }[];
+  pushedAt: string;
 }
 
 interface SimplifiedRepository {
@@ -215,6 +253,44 @@ async function run() {
                       }
                     }
                   }
+                  licenseInfo {
+                    key
+                    name
+                    spdxId
+                    url
+                  }
+                  fundingLinks {
+                    platform
+                    url
+                  }
+                  isArchived
+                  isFork
+                  parent {
+                    name
+                    nameWithOwner
+                    url
+                  }
+                  isMirror
+                  latestRelease {
+                    name
+                    tagName
+                    createdAt
+                    url
+                  }
+                  milestones(first: 10) {
+                    title
+                    description
+                    state
+                    dueOn
+                    url
+                  }
+                  mirrorUrl
+                  packages(first: 10) {
+                    name
+                    packageType
+                    version
+                  }
+                  pushedAt
                 }
                 starredAt
               }
@@ -280,7 +356,18 @@ async function run() {
             avatar_url: repo.owner.avatarUrl,
             html_url: repo.owner.url
           },
-          topics: topics
+          topics: topics,
+          licenseInfo: repo.licenseInfo,
+          fundingLinks: repo.fundingLinks || [],
+          isArchived: repo.isArchived,
+          isFork: repo.isFork,
+          parent: repo.parent,
+          isMirror: repo.isMirror,
+          latestRelease: repo.latestRelease,
+          milestones: repo.milestones || [],
+          mirrorUrl: repo.mirrorUrl,
+          packages: repo.packages || [],
+          pushedAt: repo.pushedAt
         });
       }
 

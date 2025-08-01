@@ -684,6 +684,185 @@ input:checked + .toggle-slider:before {
 
 .repo-info-value {
   color: $text-color;
+  
+  a {
+    color: $link-color;
+    text-decoration: none;
+    
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+}
+
+// Status indicators
+.status-archived,
+.status-fork,
+.status-mirror {
+  display: inline-block;
+  padding: 2px 8px;
+  font-size: 0.75em;
+  border-radius: 10px;
+  margin-right: 5px;
+}
+
+.status-archived {
+  background-color: #ffeef0;
+  color: #cb2431;
+}
+
+.status-fork {
+  background-color: #f1f8ff;
+  color: #0366d6;
+}
+
+.status-mirror {
+  background-color: #fff3cd;
+  color: #856404;
+}
+
+// Funding links
+.repo-funding {
+  margin-top: 15px;
+  padding-top: 15px;
+  border-top: 1px solid $border-color;
+
+  h4 {
+    margin: 0 0 10px 0;
+    color: $text-color;
+    font-size: 0.85em;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+}
+
+.funding-links {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.funding-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background-color: $hover-bg-color;
+  border: 1px solid $border-color;
+  color: $text-color;
+  text-decoration: none;
+  font-size: 16px;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background-color: $link-color;
+    color: white;
+    border-color: $link-color;
+    transform: scale(1.1);
+  }
+}
+
+// Packages
+.repo-packages {
+  margin-top: 15px;
+  padding-top: 15px;
+  border-top: 1px solid $border-color;
+
+  h4 {
+    margin: 0 0 10px 0;
+    color: $text-color;
+    font-size: 0.85em;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+}
+
+.package-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.package-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  font-size: 0.75em;
+  background-color: #e6f3ff;
+  color: #0366d6;
+  border-radius: 10px;
+  border: 1px solid #b3d9ff;
+}
+
+// Milestones
+.repo-milestones {
+  margin-top: 15px;
+  padding-top: 15px;
+  border-top: 1px solid $border-color;
+
+  h4 {
+    margin: 0 0 10px 0;
+    color: $text-color;
+    font-size: 0.85em;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+}
+
+.milestone-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.milestone-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+  background-color: $hover-bg-color;
+  border-radius: $border-radius;
+  font-size: 0.8em;
+}
+
+.milestone-state {
+  display: inline-block;
+  padding: 2px 6px;
+  font-size: 0.7em;
+  border-radius: 8px;
+  font-weight: 500;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.milestone-open {
+  background-color: #28a745;
+  color: white;
+}
+
+.milestone-closed {
+  background-color: #6c757d;
+  color: white;
+}
+
+.milestone-title {
+  color: $link-color;
+  text-decoration: none;
+  font-weight: 500;
+  
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+.milestone-due {
+  color: $secondary-text-color;
+  font-size: 0.75em;
+  margin-left: auto;
 }
 
 // Responsive design

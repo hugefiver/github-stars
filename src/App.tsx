@@ -15,6 +15,32 @@ import {
 } from './store/atoms';
 import './App.scss';
 
+// Helper function to get funding platform icons
+const getFundingIcon = (platform: string) => {
+  switch (platform.toLowerCase()) {
+    case 'github':
+      return '💖';
+    case 'patreon':
+      return '🎭';
+    case 'open collective':
+      return '🏛️';
+    case 'ko-fi':
+      return '☕';
+    case 'tidelift':
+      return '🛡️';
+    case 'community bridge':
+      return '🌉';
+    case 'liberapay':
+      return '💳';
+    case 'issuehunt':
+      return '🏆';
+    case 'otechie':
+      return '👨‍💻';
+    default:
+      return '💰';
+  }
+};
+
 function App() {
   const [repos, setRepos] = useState<Repository[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -489,11 +515,114 @@ function App() {
                       </div>
                       <div className="repo-info-item">
                         <span className="repo-info-label">License:</span>
-                        <span className="repo-info-value">{repo.license?.name || 'N/A'}</span>
+                        <span className="repo-info-value">{repo.license?.name || repo.licenseInfo?.name || 'N/A'}</span>
                       </div>
-                      {/* 可以在这里添加其他信息，例如 homepage, default branch 等 */}
+                      <div className="repo-info-item">
+                        <span className="repo-info-label">Status:</span>
+                        <span className="repo-info-value">
+                          {repo.isArchived && <span className="status-archived">📦 Archived</span>}
+                          {repo.isFork && <span className="status-fork">🍴 Fork</span>}
+                          {repo.isMirror && <span className="status-mirror">🪞 Mirror</span>}
+                          {!repo.isArchived && !repo.isFork && !repo.isMirror && <span>Active</span>}
+                        </span>
+                      </div>
+                      {repo.parent && (
+                        <div className="repo-info-item">
+                          <span className="repo-info-label">Parent:</span>
+                          <span className="repo-info-value">
+                            <a href={repo.parent.url} target="_blank" rel="noopener noreferrer">
+                              {repo.parent.nameWithOwner}
+                            </a>
+                          </span>
+                        </div>
+                      )}
+                      {repo.latestRelease && (
+                        <div className="repo-info-item">
+                          <span className="repo-info-label">Latest Release:</span>
+                          <span className="repo-info-value">
+                            <a href={repo.latestRelease.url} target="_blank" rel="noopener noreferrer">
+                              {repo.latestRelease.name} ({repo.latestRelease.tagName})
+                            </a>
+                          </span>
+                        </div>
+                      )}
+                      {repo.mirrorUrl && (
+                        <div className="repo-info-item">
+                          <span className="repo-info-label">Mirror URL:</span>
+                          <span className="repo-info-value">
+                            <a href={repo.mirrorUrl} target="_blank" rel="noopener noreferrer">
+                              {repo.mirrorUrl}
+                            </a>
+                          </span>
+                        </div>
+                      )}
+                      {repo.pushedAt && (
+                        <div className="repo-info-item">
+                          <span className="repo-info-label">Last Pushed:</span>
+                          <span className="repo-info-value">{formatDate(repo.pushedAt)}</span>
+                        </div>
+                      )}
                     </div>
                   </div>
+
+                  {/* Funding Links */}
+                  {repo.fundingLinks && repo.fundingLinks.length > 0 && (
+                    <div className="repo-funding">
+                      <h4>Funding</h4>
+                      <div className="funding-links">
+                        {repo.fundingLinks.map((funding, index) => (
+                          <a
+                            key={`${repo.id}-funding-${index}`}
+                            href={funding.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="funding-link"
+                            title={`Fund on ${funding.platform}`}
+                          >
+                            {getFundingIcon(funding.platform)}
+                          </a>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Packages */}
+                  {repo.packages && repo.packages.length > 0 && (
+                    <div className="repo-packages">
+                      <h4>Packages</h4>
+                      <div className="package-list">
+                        {repo.packages.map((pkg, index) => (
+                          <span key={`${repo.id}-package-${index}`} className="package-badge">
+                            {pkg.name} {pkg.version && `(${pkg.version})`}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Milestones */}
+                  {repo.milestones && repo.milestones.length > 0 && (
+                    <div className="repo-milestones">
+                      <h4>Milestones</h4>
+                      <div className="milestone-list">
+                        {repo.milestones.slice(0, 5).map((milestone, index) => (
+                          <div key={`${repo.id}-milestone-${index}`} className="milestone-item">
+                            <span className={`milestone-state milestone-${milestone.state.toLowerCase()}`}>
+                              {milestone.state}
+                            </span>
+                            <a href={milestone.url} target="_blank" rel="noopener noreferrer" className="milestone-title">
+                              {milestone.title}
+                            </a>
+                            {milestone.dueOn && (
+                              <span className="milestone-due">
+                                Due: {formatDate(milestone.dueOn)}
+                              </span>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                   
                   <div className="repo-stats">
                     <span className="stat">

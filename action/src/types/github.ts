@@ -32,6 +32,45 @@ export interface PrimaryLanguage {
   name: string;
 }
 
+export interface LicenseInfo {
+  key: string;
+  name: string;
+  spdxId: string;
+  url: string | null;
+}
+
+export interface FundingLink {
+  platform: string;
+  url: string;
+}
+
+export interface Release {
+  name: string;
+  tagName: string;
+  createdAt: string;
+  url: string;
+}
+
+export interface Milestone {
+  title: string;
+  description: string | null;
+  state: string;
+  dueOn: string | null;
+  url: string;
+}
+
+export interface Package {
+  name: string;
+  packageType: string;
+  version: string | null;
+}
+
+export interface ParentRepository {
+  name: string;
+  nameWithOwner: string;
+  url: string;
+}
+
 export interface GraphQLRepository {
   id: string;
   name: string;
@@ -46,6 +85,17 @@ export interface GraphQLRepository {
   createdAt: string;
   owner: Owner;
   repositoryTopics: RepositoryTopics | null;
+  licenseInfo: LicenseInfo | null;
+  fundingLinks: FundingLink[];
+  isArchived: boolean;
+  isFork: boolean;
+  parent: ParentRepository | null;
+  isMirror: boolean;
+  latestRelease: Release | null;
+  milestones: Milestone[];
+  mirrorUrl: string | null;
+  packages: Package[];
+  pushedAt: string;
 }
 
 export interface StarredRepositoryEdge {
@@ -90,4 +140,42 @@ export interface ProcessedRepository {
     html_url: string;
   };
   topics: string[];
+  licenseInfo: {
+    key: string;
+    name: string;
+    spdxId: string;
+    url: string | null;
+  } | null;
+  fundingLinks: {
+    platform: string;
+    url: string;
+  }[];
+  isArchived: boolean;
+  isFork: boolean;
+  parent: {
+    name: string;
+    nameWithOwner: string;
+    url: string;
+  } | null;
+  isMirror: boolean;
+  latestRelease: {
+    name: string;
+    tagName: string;
+    createdAt: string;
+    url: string;
+  } | null;
+  milestones: {
+    title: string;
+    description: string | null;
+    state: string;
+    dueOn: string | null;
+    url: string;
+  }[];
+  mirrorUrl: string | null;
+  packages: {
+    name: string;
+    packageType: string;
+    version: string | null;
+  }[];
+  pushedAt: string;
 }
