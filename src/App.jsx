@@ -9,11 +9,12 @@ function App() {
   // 搜索状态
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedLanguage, setSelectedLanguage] = useState('');
-  const [sortBy, setSortBy] = useState('stars');
+  const [sortBy, setSortBy] = useState('created');
   
-  // 分页状态
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10;
+  // 无限滚动状态
+  const [displayedCount, setDisplayedCount] = useState(10);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const itemsPerLoad = 10;
   
   // 设置状态
   const [showSettings, setShowSettings] = useState(false);
@@ -94,17 +95,38 @@ function App() {
     return result;
   }, [repos, searchTerm, selectedLanguage, sortBy]);
 
-  // 分页数据
-  const totalPages = Math.ceil(filteredAndSortedRepos.length / itemsPerPage);
-  const paginatedRepos = useMemo(() => {
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    return filteredAndSortedRepos.slice(startIndex, startIndex + itemsPerPage);
-  }, [filteredAndSortedRepos, currentPage]);
+  // 显示的数据
+  const displayedRepos = useMemo(() => {
+    return filteredAndSortedRepos.slice(0, displayedCount);
+  }, [filteredAndSortedRepos, displayedCount]);
 
-  // 重置到第一页
+  // 重置显示数量
   useEffect(() => {
-    setCurrentPage(1);
+    setDisplayedCount(itemsPerLoad);
   }, [searchTerm, selectedLanguage, sortBy]);
+
+  // 无限滚动处理
+  useEffect(() => {
+    const handleScroll = () => {
+      if (loadingMore || displayedRepos.length >= filteredAndSortedRepos.length) {
+        return;
+      }
+
+      const scrollPosition = window.scrollY + window.innerHeight;
+      const threshold = document.documentElement.scrollHeight - 200;
+
+      if (scrollPosition >= threshold) {
+        setLoadingMore(true);
+        setTimeout(() => {
+          setDisplayedCount(prev => prev + itemsPerLoad);
+          setLoadingMore(false);
+        }, 500);
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [loadingMore, displayedRepos.length, filteredAndSortedRepos.length]);
 
   // 格式化日期
   const formatDate = (dateString) => {
@@ -203,17 +225,17 @@ function App() {
 
         {/* 结果统计 */}
         <div className="results-info">
-          Showing {paginatedRepos.length} of {filteredAndSortedRepos.length} repositories
+          Showing {displayedRepos.length} of {filteredAndSortedRepos.length} repositories
         </div>
 
         {/* 仓库列表 */}
         <div className="repo-list">
-          {paginatedRepos.length === 0 ? (
+          {displayedRepos.length === 0 ? (
             <div className="no-results">
               No repositories found matching your criteria.
             </div>
           ) : (
-            paginatedRepos.map(repo => (
+            displayedRepos.map(repo => (
               <div key={repo.id} className="repo-card">
                 <div className="repo-header">
                   <h2 className="repo-name">
@@ -255,28 +277,25 @@ function App() {
           )}
         </div>
 
-        {/* 分页控件 */}
-        {totalPages > 1 && (
-          <div className="pagination">
-            <button 
-              onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-              disabled={currentPage === 1}
-              className="pagination-button"
-            >
-              Previous
-            </button>
-            
-            <span className="pagination-info">
-              Page {currentPage} of {totalPages}
-            </span>
-            
-            <button 
-              onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-              disabled={currentPage === totalPages}
-              className="pagination-button"
-            >
-              Next
-            </button>
+        {/* 加载更多指示器 */}
+        {loadingMore && (
+          <div className="loading-more">
+            <div className="loading-spinner"></div>
+            <p>Loading more repositories...</p>
+          </div>
+        )}
+        
+        {/* 显示是否还有更多数据 */}
+        {displayedRepos.length < filteredAndSortedRepos.length && !loadingMore && (
+          <div className="load-more-hint">
+            <p>Scroll down to load more repositories</p>
+          </div>
+        )}
+        
+        {/* 显示已加载所有数据 */}
+        {displayedRepos.length >= filteredAndSortedRepos.length && displayedRepos.length > 0 && (
+          <div className="all-loaded">
+            <p>All repositories loaded</p>
           </div>
         )}
       </main>

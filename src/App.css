@@ -368,6 +368,52 @@
   background-color: #f6f8fa;
 }
 
+/* 无限滚动相关样式 */
+.loading-more {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 30px;
+  color: #586069;
+  gap: 15px;
+}
+
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #e1e4e8;
+  border-top: 4px solid #0366d6;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.load-more-hint {
+  text-align: center;
+  padding: 20px;
+  color: #586069;
+  font-style: italic;
+  background-color: #f6f8fa;
+  border-radius: 6px;
+  margin: 10px 0;
+}
+
+.all-loaded {
+  text-align: center;
+  padding: 20px;
+  color: #28a745;
+  font-weight: 500;
+  background-color: #f0fff4;
+  border: 1px solid #28a745;
+  border-radius: 6px;
+  margin: 10px 0;
+}
+
 /* 响应式设计 */
 @media (max-width: 768px) {
   .app {
