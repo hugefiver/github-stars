@@ -28,6 +28,9 @@ function App() {
   // 仓库详情展开状态
   const [expandedRepos, setExpandedRepos] = useState<Record<number, boolean>>({});
   
+  // 全局隐藏详情开关
+  const [hideAllDetails, setHideAllDetails] = useState<boolean>(false);
+  
   // 排序方向状态
   const [sortOrder, setSortOrder] = useState<string>('desc');
   // 在生产环境中使用完整版本，开发环境中使用简化版本
@@ -311,6 +314,19 @@ function App() {
           </div>
           
           <div className="filters">
+            {/* 全局隐藏详情开关 */}
+            <div className="hide-details-toggle">
+              <label className="toggle-switch">
+                <input
+                  type="checkbox"
+                  checked={hideAllDetails}
+                  onChange={(e) => setHideAllDetails(e.target.checked)}
+                />
+                <span className="toggle-slider"></span>
+              </label>
+              <span className="toggle-label">Hide All Details</span>
+            </div>
+            
             <select
               value={selectedLanguage}
               onChange={(e) => setSelectedLanguage(e.target.value)}
@@ -370,7 +386,11 @@ function App() {
             </div>
           ) : (
             displayedRepos.map(repo => {
-              const isDetailsExpanded = expandedRepos[repo.id] !== false; // 默认展开
+              // 如果全局隐藏详情开启，则默认隐藏，但允许单独展开
+              // 如果全局隐藏详情关闭，则使用原来的逻辑（默认展开）
+              const isDetailsExpanded = hideAllDetails 
+                ? expandedRepos[repo.id] === true  // 只有明确设置为true才展开
+                : expandedRepos[repo.id] !== false; // 默认展开，除非明确设置为false
               return (
                 <div key={repo.id} className="repo-card">
                   <div className="repo-header">
