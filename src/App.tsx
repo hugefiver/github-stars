@@ -422,16 +422,6 @@ function App() {
                     {repo.description || 'No description provided.'}
                   </p>
 
-                  {/* 折叠/展开按钮 */}
-                  <button 
-                    className="repo-details-toggle"
-                    onClick={() => setExpandedRepos(prev => ({
-                      ...prev,
-                      [repo.id]: !isDetailsExpanded
-                    }))}
-                  >
-                    {isDetailsExpanded ? 'Hide Details' : 'Show Details'}
-                  </button>
                   
                   {isDetailsExpanded && (
                     <div className="repo-details-section">
@@ -441,7 +431,7 @@ function App() {
                           <h4>Topics</h4>
                           <div className="repo-topics">
                             {repo.topics.map(topic => (
-                              <span key={topic} className="repo-topic">
+                              <span key={`${repo.id}-${topic}`} className="repo-topic">
                                 {topic}
                               </span>
                             ))}
@@ -460,7 +450,7 @@ function App() {
                                 .map(([language, data]) => (
                                   parseFloat(data.percentage) >= 0.5 && (
                                     <div
-                                      key={language}
+                                      key={`${repo.id}-${language}-segment`}
                                       className={`repo-language-segment lang-${language.replace(/[^a-zA-Z0-9]/g, '_')}`}
                                       style={{ width: `${data.percentage}%` }}
                                       title={`${language}: ${data.percentage}%`}
@@ -474,7 +464,7 @@ function App() {
                                 .map(([language, data]) => (
                                   parseFloat(data.percentage) >= 0.5 && (
                                     <span
-                                      key={language}
+                                      key={`${repo.id}-${language}`}
                                       className="repo-language-label"
                                       style={{ width: `${data.percentage}%` }}
                                     >
