@@ -228,11 +228,6 @@ async function run() {
       };
 
       const response = await handleRateLimit(graphqlWithAuth, async () => {
-        // Add a small delay between requests to avoid secondary rate limits
-        if (cursor) {
-          console.log('Waiting 500ms before next request to avoid rate limits...');
-          await delay(500);
-        }
         return await graphqlWithAuth(query, variables) as GraphQLResponse;
       }) as GraphQLResponse;
       const starredRepos = response.user.starredRepositories;
