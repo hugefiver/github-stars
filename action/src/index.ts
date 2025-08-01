@@ -168,6 +168,7 @@ async function run() {
     let hasNextPage = true;
     let cursor: string | null = null;
     let totalCount = 0;
+    let index = 1;
 
     while (hasNextPage) {
       const query = `
@@ -238,7 +239,6 @@ async function run() {
       }
 
       const edges = starredRepos.edges;
-      let index = 1;
 
       for (const edge of edges) {
         const repo = edge.node;
