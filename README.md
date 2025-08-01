@@ -20,12 +20,16 @@
   - 多种排序方式（按星数、fork 数、更新时间等）
 - 分页显示，提高浏览体验
 - 可自定义数据源设置
+- 详细的编程语言分布统计
+- 无限滚动加载
+- 仓库主题标签展示
 
 ## 技术栈
 
-- **后端**: GitHub Actions, Node.js, Octokit
-- **前端**: React, Vite, CSS3
+- **后端**: GitHub Actions, Node.js 24, Octokit, GraphQL
+- **前端**: React 18, Vite, TypeScript, CSS3, MiniSearch
 - **部署**: GitHub Pages
+- **包管理**: pnpm
 
 ## 可重用的 GitHub Action
 
@@ -35,7 +39,7 @@
 
 ```yaml
 - name: Fetch starred repositories
-  uses: your-username/github-stars-search/action@v1
+  uses: hugefiver/github-stars-search/action@v1
   with:
     github-token: ${{ secrets.GITHUB_TOKEN }}
     username: ${{ github.actor }}
@@ -72,21 +76,31 @@
 
 ### 搜索和过滤
 
-- **关键字搜索**：在仓库名、描述和主题标签中搜索
+- **关键字搜索**：在仓库名、描述和主题标签中搜索（使用 MiniSearch 实现高性能搜索）
 - **语言过滤**：按编程语言筛选仓库
-- **多种排序**：按星数、fork 数、更新时间、创建时间和名称排序
+- **标签过滤**：按仓库主题标签筛选
+- **多种排序**：按星数、fork 数、更新时间、创建时间、星标时间和名称排序
+- **排序方向**：支持升序和降序排列
 
 ### 响应式设计
 
 - 适配桌面和移动设备
 - 在小屏幕上自动调整布局
+- 无限滚动加载更多内容
+
+### 仓库信息展示
+
+- 仓库基本信息（名称、描述、URL）
+- 编程语言分布统计和可视化
+- 仓库主题标签
+- 统计信息（星数、fork 数、更新时间、星标时间）
 
 ## 如何使用
 
 ### 1. 克隆此仓库
 
 ```bash
-git clone <your-repo-url>
+git clone https://github.com/hugefiver/github-stars-search.git
 cd github-stars-search
 ```
 
@@ -96,8 +110,8 @@ cd github-stars-search
 
 ```bash
 cd action
-npm install
-npm run build
+pnpm install
+pnpm run build
 ```
 
 ### 3. 配置 GitHub Actions
@@ -109,6 +123,7 @@ npm run build
 - 统一使用 Node.js 24 环境
 - 改进了依赖安装和构建过程
 - 使用最新的 GitHub Actions 版本
+- 自动部署到 GitHub Pages
 
 ### 4. 启用 GitHub Pages
 
@@ -148,22 +163,74 @@ pnpm run dev
 pnpm run build
 ```
 
+### Action 开发
+
+```bash
+cd action
+pnpm install
+pnpm run build
+```
+
 ## 数据结构
+
+### 完整数据格式 (starred-repos.json)
 
 获取的仓库信息包括：
 
 - 仓库 ID 和名称
 - 完整名称和 URL
 - 描述和主要编程语言
+- 详细的编程语言分布统计（字节大小和百分比）
 - Star 数和 Fork 数
 - 创建和更新时间
-- 所有者信息
+- 星标时间
+- 所有者信息（登录名、头像、URL）
 - 仓库主题标签
 
-数据保存在 `data/starred-repos-simple.json` 文件中供前端使用。
+### 简化数据格式 (starred-repos-simple.json)
+
+前端使用的数据格式，包含：
+
+- 基本仓库信息
+- 编程语言分布统计
+- 主题标签
+- 统计信息
+
+数据保存在 `docs/data/starred-repos-simple.json` 文件中供前端使用。
+
+## GraphQL API 实现
+
+项目使用 GitHub GraphQL API 获取数据，具有以下特点：
+
+- 使用 `nameWithOwner` 字段获取完整仓库名
+- 正确处理 `StarredRepositoryEdge` 结构
+- 支持分页获取大量数据
+- 获取详细的编程语言统计信息
+- 获取仓库主题标签
 
 ## 注意事项
 
 - 由于 GitHub API 的限制，每次最多获取 1000 个 Star 的仓库
 - 为了保护隐私，建议将此仓库设为私有
 - 前端页面只能访问公开的仓库信息
+- 使用 GraphQL API 需要注意速率限制
+- 项目完全由 AI 生成，遵循项目的 AI 生成内容政策
+
+## 项目结构
+
+```
+github-stars-search/
+├── action/                 # GitHub Action 源码
+│   ├── src/
+│   │   ├── index.ts       # Action 主要逻辑
+│   │   └── types/         # TypeScript 类型定义
+│   ├── action.yml         # Action 配置
+│   └── package.json
+├── src/                   # 前端源码
+│   ├── App.tsx           # 主要组件
+│   ├── types.ts          # 前端类型定义
+│   └── ...
+├── docs/                  # 构建输出和 GitHub Pages
+├── .github/workflows/     # GitHub Actions 工作流
+└── scripts/              # 测试和模拟脚本
+```
