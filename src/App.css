@@ -235,6 +235,23 @@
   border-radius: 2px;
 }
 
+.repo-details-toggle {
+  background: none;
+  border: 1px solid #e1e4e8;
+  border-radius: 6px;
+  padding: 6px 12px;
+  cursor: pointer;
+  font-size: 0.8em;
+  color: #0366d6;
+  margin: 10px 0;
+  transition: all 0.2s ease;
+}
+
+.repo-details-toggle:hover {
+  background-color: #f6f8fa;
+  border-color: #0366d6;
+}
+
 .repo-stats {
   display: flex;
   gap: 15px;
@@ -545,6 +562,42 @@
 /* Linter workaround 2: a more complex rule */
 .lang-Dummy2, .lang-Dummy2::before { background-color: #000; content: ''; }
 
+.repo-additional-info {
+  margin-top: 15px;
+  padding-top: 15px;
+  border-top: 1px solid #e1e4e8;
+}
+
+.repo-additional-info h4 {
+  margin: 0 0 10px 0;
+  color: #24292e;
+  font-size: 0.85em;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.repo-info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 10px;
+}
+
+.repo-info-item {
+  display: flex;
+  flex-direction: column;
+  font-size: 0.8em;
+}
+
+.repo-info-label {
+  color: #586069;
+  font-weight: 500;
+}
+
+.repo-info-value {
+  color: #24292e;
+}
+
 /* 响应式设计 */
 @media (max-width: 768px) {
   .app {
@@ -582,4 +635,10 @@
     width: 95%;
   }
   
+  .repo-details-grid {
+    grid-template-columns: 1fr; /* Stack columns on small screens */
+  }
 }
+
+/* Linter workaround 3 */
+.lang-Dummy3 { background-color: #eee; }

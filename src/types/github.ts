@@ -9,6 +9,13 @@ export interface Language {
   percentage: string;
 }
 
+export interface License {
+  key: string;
+  name: string;
+  spdx_id: string;
+  url: string | null;
+}
+
 export interface Repository {
   id: number;
   name: string;
@@ -17,6 +24,7 @@ export interface Repository {
   description: string | null;
   language: string | null;
   languages: Record<string, Language>;
+  license: License | null;
   stargazers_count: number;
   forks_count: number;
   updated_at: string;

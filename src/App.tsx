@@ -366,87 +366,115 @@ function App() {
               No repositories found matching your criteria.
             </div>
           ) : (
-            displayedRepos.map(repo => (
-              <div key={repo.id} className="repo-card">
-                <div className="repo-header">
-                  <h2 className="repo-name">
-                    <a href={repo.html_url} target="_blank" rel="noopener noreferrer">
-                      {repo.full_name}
-                    </a>
-                  </h2>
-                  <span className="repo-language">{repo.language}</span>
-                </div>
-                
-                <p className="repo-description">
-                  {repo.description || 'No description provided.'}
-                </p>
-                
-                <div className="repo-details-grid">
-                  {/* 左侧：Tags 和 Topics */}
-                  <div className="repo-meta-info">
-                    {repo.topics && repo.topics.length > 0 && (
-                      <div className="repo-topics-group">
-                        <h4>Topics</h4>
-                        <div className="repo-topics">
-                          {repo.topics.map(topic => (
-                            <span key={topic} className="repo-topic">
-                              {topic}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                    {/* 可以在这里添加其他元信息，比如 license 等 */}
+            displayedRepos.map(repo => {
+              const [isDetailsExpanded, setIsDetailsExpanded] = useState(true);
+              return (
+                <div key={repo.id} className="repo-card">
+                  <div className="repo-header">
+                    <h2 className="repo-name">
+                      <a href={repo.html_url} target="_blank" rel="noopener noreferrer">
+                        {repo.full_name}
+                      </a>
+                    </h2>
+                    <span className="repo-language">{repo.language}</span>
                   </div>
+                  
+                  <p className="repo-description">
+                    {repo.description || 'No description provided.'}
+                  </p>
 
-                  {/* 右侧：语言比例显示 */}
-                  {repo.languages && Object.keys(repo.languages).length > 0 && (
-                    <div className="repo-languages-compact">
-                      <h4>Languages</h4>
-                      <div className="repo-language-list-compact">
-                        {Object.entries(repo.languages)
-                          .sort(([,a], [,b]) => parseFloat(b.percentage) - parseFloat(a.percentage))
-                          .map(([language, data]) => (
-                            <div key={language} className="repo-language-item-compact">
-                              <div className="repo-language-info-compact">
-                                <span className="repo-language-name-compact">{language}</span>
-                                <span className="repo-language-percentage-compact">{data.percentage}%</span>
-                              </div>
-                              <div className="repo-language-bar-compact">
-                                <div
-                                  className="repo-language-bar-fill-compact"
-                                  style={{ width: `${data.percentage}%` }}
-                                ></div>
-                              </div>
+                  {/* 折叠/展开按钮 */}
+                  <button 
+                    className="repo-details-toggle"
+                    onClick={() => setIsDetailsExpanded(!isDetailsExpanded)}
+                  >
+                    {isDetailsExpanded ? 'Hide Details' : 'Show Details'}
+                  </button>
+                  
+                  {isDetailsExpanded && (
+                    <div className="repo-details-grid">
+                      {/* 左侧：语言比例显示 */}
+                      {repo.languages && Object.keys(repo.languages).length > 0 && (
+                        <div className="repo-languages-compact">
+                          <h4>Languages</h4>
+                          <div className="repo-language-list-compact">
+                            {Object.entries(repo.languages)
+                              .sort(([,a], [,b]) => parseFloat(b.percentage) - parseFloat(a.percentage))
+                              .map(([language, data]) => (
+                                <div key={language} className="repo-language-item-compact">
+                                  <div className="repo-language-info-compact">
+                                    <span className="repo-language-name-compact">{language}</span>
+                                    <span className="repo-language-percentage-compact">{data.percentage}%</span>
+                                  </div>
+                                  <div className="repo-language-bar-compact">
+                                    <div
+                                      className={`repo-language-bar-fill-compact lang-${language.replace(/[^a-zA-Z0-9]/g, '_')}`}
+                                      style={{ width: `${data.percentage}%` }}
+                                    ></div>
+                                  </div>
+                                </div>
+                              ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* 右侧：Tags 和 Topics */}
+                      <div className="repo-meta-info">
+                        {repo.topics && repo.topics.length > 0 && (
+                          <div className="repo-topics-group">
+                            <h4>Topics</h4>
+                            <div className="repo-topics">
+                              {repo.topics.map(topic => (
+                                <span key={topic} className="repo-topic">
+                                  {topic}
+                                </span>
+                              ))}
                             </div>
-                          ))}
+                          </div>
+                        )}
                       </div>
                     </div>
                   )}
-                </div>
-                
-                <div className="repo-stats">
-                  <span className="stat">
-                    <span className="stat-icon">⭐</span>
-                    {formatNumber(repo.stargazers_count)}
-                  </span>
-                  <span className="stat">
-                    <span className="stat-icon">🍴</span>
-                    {formatNumber(repo.forks_count)}
-                  </span>
-                  <span className="stat">
-                    <span className="stat-icon">📅</span>
-                    Updated {formatDate(repo.updated_at)}
-                  </span>
-                  {repo.starred_at && (
+
+                  {/* 仓库信息（例如 license 和 primary language） */}
+                  <div className="repo-additional-info">
+                    <h4>Repository Information</h4>
+                    <div className="repo-info-grid">
+                      <div className="repo-info-item">
+                        <span className="repo-info-label">Primary Language:</span>
+                        <span className="repo-info-value">{repo.language || 'N/A'}</span>
+                      </div>
+                      <div className="repo-info-item">
+                        <span className="repo-info-label">License:</span>
+                        <span className="repo-info-value">{repo.license?.name || 'N/A'}</span>
+                      </div>
+                      {/* 可以在这里添加其他信息，例如 homepage, default branch 等 */}
+                    </div>
+                  </div>
+                  
+                  <div className="repo-stats">
                     <span className="stat">
                       <span className="stat-icon">⭐</span>
-                      Starred {formatDate(repo.starred_at)}
+                      {formatNumber(repo.stargazers_count)}
                     </span>
-                  )}
+                    <span className="stat">
+                      <span className="stat-icon">🍴</span>
+                      {formatNumber(repo.forks_count)}
+                    </span>
+                    <span className="stat">
+                      <span className="stat-icon">📅</span>
+                      Updated {formatDate(repo.updated_at)}
+                    </span>
+                    {repo.starred_at && (
+                      <span className="stat">
+                        <span className="stat-icon">⭐</span>
+                        Starred {formatDate(repo.starred_at)}
+                      </span>
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))
+              );
+            })
           )}
         </div>
 
