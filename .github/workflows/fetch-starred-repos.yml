@@ -13,9 +13,14 @@ jobs:
   fetch-starred-repos:
     runs-on: ubuntu-latest
     
+    permissions: 
+      contents: write 
+      pages: write 
+      id-token: write
+
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         
       - name: Fetch starred repositories
         uses: ./action
@@ -26,14 +31,14 @@ jobs:
           simple-output-file: ./data/starred-repos-simple.json
           
       - name: Setup pnpm
-        uses: pnpm/action-setup@v2
+        uses: pnpm/action-setup@v3
         with:
           version: 10
       
       - name: Setup Node.js for frontend
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: '24'
           cache: 'pnpm'
           cache-dependency-path: pnpm-lock.yaml
           
@@ -43,10 +48,12 @@ jobs:
       - name: Build frontend
         run: pnpm run build
           
-      - name: Move data files to docs directory
+      - name: Prepare deployment files
         run: |
           mkdir -p docs/data
           cp data/starred-repos-simple.json docs/data/
+          # Copy built frontend files to docs directory
+          cp -r dist/* docs/ || true
           
       - name: Commit and push changes
         run: |
@@ -57,7 +64,7 @@ jobs:
           git push
           
       - name: Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v3
+        uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./docs

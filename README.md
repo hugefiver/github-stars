@@ -99,6 +99,11 @@ npm run build
 
 工作流文件位于 `.github/workflows/fetch-starred-repos.yml`，默认配置为每天自动运行一次。
 
+工作流现已优化：
+- 统一使用 Node.js 24 环境
+- 改进了依赖安装和构建过程
+- 使用最新的 GitHub Actions 版本
+
 ### 4. 启用 GitHub Pages
 
 1. 转到仓库设置 (Settings)
