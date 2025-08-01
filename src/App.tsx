@@ -397,18 +397,39 @@ function App() {
                       {Object.entries(repo.languages)
                         .sort(([,a], [,b]) => parseFloat(b.percentage) - parseFloat(a.percentage))
                         .map(([language, data]) => {
-                          const percentage = parseFloat(data.percentage);
-                          const displayName = percentage >= 0.5 ? language : '';
                           // Sanitize language name for CSS class
                           const langClass = `lang-${language.replace(/[^a-zA-Z0-9]/g, '_')}`;
                           return (
                             <div
-                              key={language}
+                              key={`segment-${language}`}
                               className={`repo-language-segment ${langClass}`}
                               style={{ width: `${data.percentage}%` }}
                               title={`${language}: ${data.percentage}%`} // Tooltip for full info
                             >
-                              {displayName}
+                              {/* Text is removed from inside the segment */}
+                            </div>
+                          );
+                        })}
+                    </div>
+                    <div className="repo-language-legend-container">
+                      {Object.entries(repo.languages)
+                        .sort(([,a], [,b]) => parseFloat(b.percentage) - parseFloat(a.percentage))
+                        .map(([language, data]) => {
+                          const percentage = parseFloat(data.percentage);
+                          // Hide languages with less than 0.5% from the legend
+                          if (percentage < 0.5) {
+                            return null;
+                          }
+                          // Sanitize language name for CSS class
+                          const langClass = `lang-${language.replace(/[^a-zA-Z0-9]/g, '_')}`;
+                          return (
+                            <div
+                              key={`legend-${language}`}
+                              className="repo-language-legend-item"
+                              style={{ width: `${data.percentage}%` }}
+                            >
+                              <span className={`repo-language-legend-color ${langClass}`}></span>
+                              <span className="repo-language-legend-name">{language}</span>
                             </div>
                           );
                         })}

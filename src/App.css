@@ -436,29 +436,50 @@
   border-radius: 5px;
   overflow: hidden;
   font-size: 0; /* Remove whitespace between segments */
+  margin-bottom: 4px; /* Space between bar and legend */
 }
 
 .repo-language-segment {
   height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: white;
-  font-size: 0.75rem;
-  font-weight: 600;
-  text-shadow: 0 1px 1px rgba(0,0,0,0.2);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  padding: 0 4px;
-  box-sizing: border-box;
+  /* Text is removed from segments, so flex properties are no longer needed here */
   transition: filter 0.2s ease;
+  cursor: pointer;
 }
 
 .repo-language-segment:hover {
   filter: brightness(1.1);
   z-index: 1;
   position: relative;
+}
+
+.repo-language-legend-container {
+  display: flex;
+  font-size: 0; /* Remove whitespace between items */
+}
+
+.repo-language-legend-item {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.7rem; /* Reset font size */
+  color: #586069;
+  padding: 2px 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.repo-language-legend-color {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  margin-right: 4px;
+  flex-shrink: 0; /* Prevent color box from shrinking */
+}
+
+.repo-language-legend-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* Default language colors, can be expanded */
@@ -494,7 +515,6 @@
 .lang-Fortran { background-color: #4d41b1; }
 .lang-Assembly { background-color: #6E4C13; }
 .lang-Vim-script { background-color: #199f4b; }
-/* .lang-Jupyter_Notebook { background-color: #DA5B0B; } */
 .lang-Dockerfile { background-color: #384d54; }
 .lang-Makefile { background-color: #427819; }
 .lang-Batchfile { background-color: #C1F12E; color: #333; }
@@ -520,6 +540,8 @@
 .lang-Bash { background-color: #4eaa25; }
 .lang-Zsh { background-color: #89e051; color: #333; }
 .lang-Fish { background-color: #4aae47; }
+/* Linter workaround */
+.lang-Dummy { background-color: #000; }
 .lang-Other { background-color: #586069; }
 
 /* 响应式设计 */
