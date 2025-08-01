@@ -1,0 +1,39 @@
+// Global styles and variables
+$background-color: #fafbfc;
+$text-color: #24292e;
+$link-color: #0366d6;
+$border-color: #e1e4e8;
+$secondary-text-color: #586069;
+$hover-bg-color: #f6f8fa;
+
+// Reset and base styles
+body {
+  margin: 0;
+  padding: 0;
+  background-color: $background-color;
+  color: $text-color;
+  line-height: 1.5;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+a {
+  color: $link-color;
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+button {
+  font-family: inherit;
+  font-size: inherit;
+}
+
+input, select {
+  font-family: inherit;
+  font-size: inherit;
+}

@@ -12,6 +12,9 @@ export interface Repository {
   updated_at: string;
   created_at: string;
   starred_at: string;
+  license?: {
+    name: string;
+  } | null;
 }
 
 export interface LanguageStat {

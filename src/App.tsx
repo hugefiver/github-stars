@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import MiniSearch from 'minisearch';
 import { Repository, LanguageStat, LanguageStats } from './types';
-import './App.css';
+import './App.scss';
 
 function App() {
   const [repos, setRepos] = useState<Repository[]>([]);
