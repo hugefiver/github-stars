@@ -1,5 +1,5 @@
 // Import global variables
-@import './index.scss';
+@use './index' as *;
 
 // App component variables
 $app-max-width: 1200px;
@@ -558,7 +558,7 @@ $focus-shadow: 0 0 0 3px rgba(3, 102, 214, 0.3);
 .lang-Haskell { background-color: #5e5086; }
 .lang-Clojure { background-color: #db5855; }
 .lang-Elixir { background-color: #6e4a7e; }
-.lang-F# { background-color: #b845fc; }
+.lang-F\# { background-color: #b845fc; }
 .lang-Erlang { background-color: #A90533; }
 .lang-OCaml { background-color: #ec6813; }
 .lang-Crystal { background-color: #000100; }
