@@ -1,54 +1,68 @@
 {
   "name": "GitHub Stars Search",
-  "description": "一个用于搜索和浏览GitHub星标仓库的React应用",
+  "description": "一个用于搜索和浏览GitHub星标仓库的React应用，包含可重用的GitHub Action",
   "ai_generated": true,
   "created_by": "Cline",
   "created_at": "2025-08-01",
+  "updated_at": "2025-08-02",
+  "version": "1.0.0",
   "cline": {
     "prompts": {
       "development": {
-        "setup": "这是一个GitHub星标仓库搜索应用，使用React + Vite构建。项目包含前端界面和GitHub Action两部分。前端提供搜索、过滤、排序功能，后端通过GitHub Actions自动获取用户的星标仓库数据。",
+        "setup": "这是一个完全由AI生成的GitHub星标仓库搜索应用，使用React + Vite构建。项目包含前端界面和GitHub Action两部分。前端提供搜索、过滤、排序功能，后端通过GitHub Actions自动获取用户的星标仓库数据。项目遵循AI生成内容政策，所有代码和文档必须由AI生成。",
         "features": [
           "自动同步GitHub星标仓库信息",
           "响应式设计，支持移动端",
           "强大的搜索功能（关键字、语言、主题）",
           "多种排序方式",
-          "分页显示",
-          "可自定义数据源"
+          "分页显示和无限滚动",
+          "可自定义数据源",
+          "详细的编程语言分布统计",
+          "仓库主题标签展示",
+          "可重用的GitHub Action"
         ],
         "tech_stack": {
-          "frontend": "React, Vite, CSS3, MiniSearch",
-          "backend": "GitHub Actions, Node.js, Octokit",
-          "deployment": "GitHub Pages"
+          "frontend": "React 18, Vite, TypeScript, CSS3, MiniSearch",
+          "backend": "GitHub Actions, Node.js 24, Octokit, GraphQL",
+          "deployment": "GitHub Pages",
+          "package_manager": "pnpm"
         },
         "development_commands": {
           "install": "pnpm install",
+          "install:action": "cd action && pnpm install",
           "dev": "pnpm run dev",
           "build": "pnpm run build",
-          "preview": "pnpm run preview"
+          "build:action": "cd action && pnpm run build",
+          "preview": "pnpm run preview",
+          "test:graphql": "node scripts/test-graphql-query.cjs",
+          "simulate:action": "node scripts/simulate-action.cjs"
         },
         "project_structure": {
-          "src/": "前端源代码",
-          "action/": "GitHub Action代码",
-          "scripts/": "辅助脚本",
-          ".github/workflows/": "GitHub Actions工作流配置"
+          "src/": "前端React源代码",
+          "action/": "GitHub Action源代码",
+          "docs/": "构建输出和GitHub Pages文件",
+          "scripts/": "测试和模拟脚本",
+          ".github/workflows/": "GitHub Actions工作流配置",
+          "data/": "数据存储目录"
         }
       },
       "coding": {
-        "react_guidelines": "使用函数组件和React Hooks，保持组件简洁，使用CSS模块或内联样式，确保响应式设计。",
-        "search_implementation": "使用MiniSearch库实现全文搜索，支持模糊匹配和前缀搜索。",
-        "data_handling": "数据存储在JSON文件中，通过fetch API加载，支持自定义数据源URL。",
-        "styling": "使用CSS3实现响应式设计，确保在移动端和桌面端都有良好的用户体验。"
+        "react_guidelines": "使用函数组件和React Hooks，保持组件简洁，使用TypeScript类型定义，确保响应式设计。使用React.memo优化性能，实现懒加载和虚拟滚动。",
+        "search_implementation": "使用MiniSearch库实现高性能全文搜索，支持模糊匹配、前缀搜索和字段权重配置。搜索字段包括仓库名、描述、语言和主题标签。",
+        "data_handling": "数据存储在JSON文件中，通过fetch API加载。支持完整数据格式和简化数据格式，前端使用简化格式提高加载性能。",
+        "styling": "使用CSS3实现响应式设计，确保在移动端和桌面端都有良好的用户体验。使用CSS变量管理主题色彩。",
+        "typescript_standards": "严格使用TypeScript，定义清晰的接口类型，确保类型安全。包括Repository、SearchFilters、LanguageStats等核心类型定义。"
       },
       "deployment": {
-        "github_pages": "项目部署到GitHub Pages，使用gh-pages分支。",
-        "github_action": "使用GitHub Actions自动获取星标仓库数据，每天自动运行一次。",
-        "action_reusable": "GitHub Action可重用，支持自定义参数配置。"
+        "github_pages": "项目部署到GitHub Pages，使用gh-pages分支。构建输出到docs目录，支持HTTPS和CDN加速。",
+        "github_action": "使用GitHub Actions自动获取星标仓库数据，每天自动运行一次，支持手动触发。Action可重用，支持自定义参数配置。",
+        "build_process": "构建流程包括数据获取、前端构建和文件部署。使用Node.js 24环境，统一使用pnpm管理依赖。"
       },
       "maintenance": {
-        "data_sync": "GitHub Actions每天自动同步数据，支持手动触发。",
-        "api_limits": "注意GitHub API限制，每次最多获取1000个星标仓库。",
-        "privacy": "建议将仓库设为私有以保护隐私。"
+        "data_sync": "GitHub Actions每天自动同步数据，支持手动触发。注意GitHub API限制，每次最多获取1000个星标仓库。",
+        "api_limits": "注意GitHub API限制，使用GraphQL API优化查询效率。合理使用分页和缓存策略。",
+        "privacy": "建议将仓库设为私有以保护隐私，只处理公开的仓库信息。",
+        "performance_monitoring": "监控搜索性能、渲染性能和API响应时间，持续优化用户体验。"
       }
     },
     "hooks": {
@@ -59,14 +73,36 @@
           "condition": "modified_files.includes('./action') || modified_files.some(file => file.startsWith('./action/'))",
           "command": "cd ./action && pnpm run build",
           "required": true
+        },
+        {
+          "name": "Build frontend",
+          "description": "如果对代码的修改涉及./src目录或配置文件，则在提交之前需要运行一次pnpm run build",
+          "condition": "modified_files.some(file => file.startsWith('./src/') || ['vite.config.ts', 'tsconfig.json', 'package.json'].includes(file))",
+          "command": "pnpm run build",
+          "required": false
         }
       ]
     },
     "context": {
-      "current_focus": "前端开发和用户体验优化",
-      "data_format": "JSON格式存储仓库信息，包含名称、描述、语言、星数、fork数、主题等",
-      "search_capabilities": "支持仓库名、描述、主题的全文搜索，以及语言过滤和多种排序方式",
-      "user_experience": "提供设置浮窗让用户自定义数据源，支持无限滚动加载更多内容"
+      "current_focus": "前端开发和用户体验优化，GitHub Action的可重用性改进",
+      "data_format": "JSON格式存储仓库信息，包含完整格式和简化格式。完整格式包含详细的语言统计信息，简化格式用于前端展示。",
+      "search_capabilities": "支持仓库名、描述、主题的全文搜索，以及语言过滤和多种排序方式。使用MiniSearch实现高性能搜索，支持模糊匹配和前缀搜索。",
+      "user_experience": "提供设置浮窗让用户自定义数据源，支持无限滚动加载更多内容。响应式设计适配移动端和桌面端。",
+      "ai_policy": "项目完全由AI生成，所有代码、文档和配置文件必须由AI生成。遵循项目的AI生成内容政策，使用指定的技术栈。",
+      "key_dependencies": {
+        "frontend": ["react", "react-dom", "vite", "typescript", "minisearch", "@octokit/rest", "dotenv"],
+        "action": ["@actions/core", "@actions/github", "@octokit/graphql", "@octokit/rest", "@vercel/ncc", "typescript"]
+      },
+      "build_targets": {
+        "frontend": "构建到docs目录，用于GitHub Pages部署",
+        "action": "构建到action/dist目录，使用ncc打包"
+      }
+    },
+    "development_workflow": {
+      "branching_strategy": "使用master主分支，功能开发使用feature分支",
+      "code_review": "所有PR必须经过审查，确保代码完全由AI生成且符合项目标准",
+      "testing": "使用scripts目录下的测试脚本验证GraphQL查询和Action功能",
+      "deployment": "自动部署到GitHub Pages，支持手动触发部署"
     }
   }
 }
