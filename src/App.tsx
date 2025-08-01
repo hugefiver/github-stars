@@ -381,69 +381,49 @@ function App() {
                   {repo.description || 'No description provided.'}
                 </p>
                 
-                <div className="repo-topics">
-                  {repo.topics.map(topic => (
-                    <span key={topic} className="repo-topic">
-                      {topic}
-                    </span>
-                  ))}
-                </div>
-
-                {/* 语言比例显示 */}
-                {repo.languages && Object.keys(repo.languages).length > 0 && (
-                  <div className="repo-languages">
-                    <h4>Languages</h4>
-                    <div className="repo-language-bar-container">
-                      {Object.entries(repo.languages)
-                        .sort(([,a], [,b]) => parseFloat(b.percentage) - parseFloat(a.percentage))
-                        .map(([language, data]) => {
-                          // Sanitize language name for CSS class
-                          const langClass = `lang-${language.replace(/[^a-zA-Z0-9]/g, '_')}`;
-                          return (
-                            <div
-                              key={`segment-${language}`}
-                              className={`repo-language-segment ${langClass}`}
-                              style={{ width: `${data.percentage}%` }}
-                              title={`${language}: ${data.percentage}%`} // Tooltip for full info
-                            >
-                              {/* Text is removed from inside the segment */}
-                            </div>
-                          );
-                        })}
-                    </div>
-                    <div className="repo-language-legend-container">
-                      {(() => {
-                        let leftOffset = 0;
-                        return Object.entries(repo.languages)
-                          .sort(([,a], [,b]) => parseFloat(b.percentage) - parseFloat(a.percentage))
-                          .map(([language, data]) => {
-                            const percentage = parseFloat(data.percentage);
-                            // Hide languages with less than 0.5% from the legend
-                            if (percentage < 0.5) {
-                              return null;
-                            }
-                            // Sanitize language name for CSS class
-                            const langClass = `lang-${language.replace(/[^a-zA-Z0-9]/g, '_')}`;
-                            const itemStyle = {
-                              position: 'absolute' as const,
-                              left: `${leftOffset}%`,
-                            };
-                            leftOffset += percentage;
-                            return (
-                              <div
-                                key={`legend-${language}`}
-                                className="repo-language-legend-item"
-                                style={itemStyle}
-                              >
-                                <span className={`repo-language-legend-color ${langClass}`}></span>
-                                <span className="repo-language-legend-name">{language}</span>
-                              </div>
-                            );
-                          });
-                      })()}
-                    </div>
+                <div className="repo-details-grid">
+                  {/* 左侧：Tags 和 Topics */}
+                  <div className="repo-meta-info">
+                    {repo.topics && repo.topics.length > 0 && (
+                      <div className="repo-topics-group">
+                        <h4>Topics</h4>
+                        <div className="repo-topics">
+                          {repo.topics.map(topic => (
+                            <span key={topic} className="repo-topic">
+                              {topic}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {/* 可以在这里添加其他元信息，比如 license 等 */}
                   </div>
-                )}
+
+                  {/* 右侧：语言比例显示 */}
+                  {repo.languages && Object.keys(repo.languages).length > 0 && (
+                    <div className="repo-languages-compact">
+                      <h4>Languages</h4>
+                      <div className="repo-language-list-compact">
+                        {Object.entries(repo.languages)
+                          .sort(([,a], [,b]) => parseFloat(b.percentage) - parseFloat(a.percentage))
+                          .map(([language, data]) => (
+                            <div key={language} className="repo-language-item-compact">
+                              <div className="repo-language-info-compact">
+                                <span className="repo-language-name-compact">{language}</span>
+                                <span className="repo-language-percentage-compact">{data.percentage}%</span>
+                              </div>
+                              <div className="repo-language-bar-compact">
+                                <div
+                                  className="repo-language-bar-fill-compact"
+                                  style={{ width: `${data.percentage}%` }}
+                                ></div>
+                              </div>
+                            </div>
+                          ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
                 
                 <div className="repo-stats">
                   <span className="stat">
