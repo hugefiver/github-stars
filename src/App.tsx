@@ -412,27 +412,35 @@ function App() {
                         })}
                     </div>
                     <div className="repo-language-legend-container">
-                      {Object.entries(repo.languages)
-                        .sort(([,a], [,b]) => parseFloat(b.percentage) - parseFloat(a.percentage))
-                        .map(([language, data]) => {
-                          const percentage = parseFloat(data.percentage);
-                          // Hide languages with less than 0.5% from the legend
-                          if (percentage < 0.5) {
-                            return null;
-                          }
-                          // Sanitize language name for CSS class
-                          const langClass = `lang-${language.replace(/[^a-zA-Z0-9]/g, '_')}`;
-                          return (
-                            <div
-                              key={`legend-${language}`}
-                              className="repo-language-legend-item"
-                              style={{ width: `${data.percentage}%` }}
-                            >
-                              <span className={`repo-language-legend-color ${langClass}`}></span>
-                              <span className="repo-language-legend-name">{language}</span>
-                            </div>
-                          );
-                        })}
+                      {(() => {
+                        let leftOffset = 0;
+                        return Object.entries(repo.languages)
+                          .sort(([,a], [,b]) => parseFloat(b.percentage) - parseFloat(a.percentage))
+                          .map(([language, data]) => {
+                            const percentage = parseFloat(data.percentage);
+                            // Hide languages with less than 0.5% from the legend
+                            if (percentage < 0.5) {
+                              return null;
+                            }
+                            // Sanitize language name for CSS class
+                            const langClass = `lang-${language.replace(/[^a-zA-Z0-9]/g, '_')}`;
+                            const itemStyle = {
+                              position: 'absolute' as const,
+                              left: `${leftOffset}%`,
+                            };
+                            leftOffset += percentage;
+                            return (
+                              <div
+                                key={`legend-${language}`}
+                                className="repo-language-legend-item"
+                                style={itemStyle}
+                              >
+                                <span className={`repo-language-legend-color ${langClass}`}></span>
+                                <span className="repo-language-legend-name">{language}</span>
+                              </div>
+                            );
+                          });
+                      })()}
                     </div>
                   </div>
                 )}

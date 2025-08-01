@@ -453,19 +453,25 @@
 }
 
 .repo-language-legend-container {
-  display: flex;
+  position: relative;
+  height: 1rem; /* Fixed height for the legend container to avoid layout shift */
   font-size: 0; /* Remove whitespace between items */
+  margin-top: 4px;
 }
 
 .repo-language-legend-item {
+  position: absolute;
+  top: 0;
+  transform: translateX(-50%); /* Center the item on its left edge */
   display: inline-flex;
   align-items: center;
   font-size: 0.7rem; /* Reset font size */
   color: #586069;
-  padding: 2px 0;
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  padding: 2px 4px;
+  background-color: rgba(255, 255, 255, 0.8); /* Slight background for readability */
+  border-radius: 3px;
+  z-index: 2;
 }
 
 .repo-language-legend-color {
@@ -540,9 +546,9 @@
 .lang-Bash { background-color: #4eaa25; }
 .lang-Zsh { background-color: #89e051; color: #333; }
 .lang-Fish { background-color: #4aae47; }
-/* Linter workaround */
-.lang-Dummy { background-color: #000; }
 .lang-Other { background-color: #586069; }
+/* Linter workaround: a more complex rule */
+.lang-Dummy, .lang-Dummy::before { background-color: #000; content: ''; }
 
 /* 响应式设计 */
 @media (max-width: 768px) {
