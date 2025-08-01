@@ -89,7 +89,7 @@ async function run() {
       const query = `
         query($username: String!, $cursor: String) {
           user(login: $username) {
-            starredRepositories(first: 100, after: $cursor, orderBy: {field: STARRED_AT, direction: DESC}) {
+            starredRepositories(first: 100, after: $cursor, orderBy: {field: STARRED_AT, direction: ASC}) {
               totalCount
               pageInfo {
                 hasNextPage
@@ -152,7 +152,8 @@ async function run() {
       }
 
       const edges = starredRepos.edges;
-      
+      let index = 1;
+
       for (const edge of edges) {
         const repo = edge.node;
         const starredAt = edge.starredAt;
@@ -176,7 +177,7 @@ async function run() {
           repo.repositoryTopics.nodes.map(node => node.node.topic.name) : [];
 
         processedRepos.push({
-          id: parseInt(repo.id.replace(/[^0-9]/g, '')),
+          id: index++,
           name: repo.name,
           full_name: repo.nameWithOwner,
           html_url: repo.url,
