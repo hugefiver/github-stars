@@ -1,6 +1,20 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { useAtom, useSetAtom } from 'jotai';
 import MiniSearch from 'minisearch';
 import { Repository, LanguageStat, LanguageStats } from './types';
+import {
+  sortByAtom,
+  sortOrderAtom,
+  showSettingsAtom,
+  expandedReposAtom,
+  hideAllDetailsAtom,
+  dataUrlAtom,
+  tempDataUrlAtom,
+  displayedCountAtom,
+  loadingMoreAtom,
+  persistentSettingsAtom,
+  initializeSettingsAtom
+} from './store/atoms';
 import './App.scss';
 
 function App() {
@@ -8,35 +22,59 @@ function App() {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   
-  // 搜索状态
+  // 搜索和过滤状态使用 useState（不记忆）
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [selectedLanguage, setSelectedLanguage] = useState<string>('');
   const [selectedTag, setSelectedTag] = useState<string>('');
-  const [sortBy, setSortBy] = useState<string>('created');
+  
+  // 其他状态使用 jotai atoms（记忆设置）
+  const [sortBy, setSortBy] = useAtom(sortByAtom);
+  const [sortOrder, setSortOrder] = useAtom(sortOrderAtom);
+  const [showSettings, setShowSettings] = useAtom(showSettingsAtom);
+  const [expandedRepos, setExpandedRepos] = useAtom(expandedReposAtom);
+  const [hideAllDetails, setHideAllDetails] = useAtom(hideAllDetailsAtom);
+  const [dataUrl, setDataUrl] = useAtom(dataUrlAtom);
+  const [tempDataUrl, setTempDataUrl] = useAtom(tempDataUrlAtom);
+  const [displayedCount, setDisplayedCount] = useAtom(displayedCountAtom);
+  const [loadingMore, setLoadingMore] = useAtom(loadingMoreAtom);
   
   // MiniSearch 实例
   const [searchIndex, setSearchIndex] = useState<MiniSearch | null>(null);
   
-  // 无限滚动状态
-  const [displayedCount, setDisplayedCount] = useState<number>(10);
-  const [loadingMore, setLoadingMore] = useState<boolean>(false);
   const itemsPerLoad = 10;
   
-  // 设置状态
-  const [showSettings, setShowSettings] = useState<boolean>(false);
-  
-  // 仓库详情展开状态
-  const [expandedRepos, setExpandedRepos] = useState<Record<number, boolean>>({});
-  
-  // 全局隐藏详情开关
-  const [hideAllDetails, setHideAllDetails] = useState<boolean>(false);
-  
-  // 排序方向状态
-  const [sortOrder, setSortOrder] = useState<string>('desc');
   // 在生产环境中使用完整版本，开发环境中使用简化版本
   const defaultDataUrl = import.meta.env.PROD ? './data/starred-repos.json' : './data/starred-repos-simple.json';
-  const [dataUrl, setDataUrl] = useState<string>(defaultDataUrl);
-  const [tempDataUrl, setTempDataUrl] = useState<string>(defaultDataUrl);
+  
+  // 初始化设置
+  const initializeSettings = useSetAtom(initializeSettingsAtom);
+  const [persistentSettings, setPersistentSettings] = useAtom(persistentSettingsAtom);
+  
+  // 组件挂载时初始化设置
+  useEffect(() => {
+    initializeSettings();
+    // 如果没有保存的 dataUrl，使用默认值
+    if (!dataUrl) {
+      setDataUrl(defaultDataUrl);
+      setTempDataUrl(defaultDataUrl);
+    }
+    // 清空搜索词，不记忆搜索状态
+    setSearchTerm('');
+    setSelectedLanguage('');
+    setSelectedTag('');
+  }, [initializeSettings, dataUrl, setDataUrl, setTempDataUrl, defaultDataUrl, setSearchTerm, setSelectedLanguage, setSelectedTag]);
+
+  // 当重要设置改变时自动保存到 localStorage
+  useEffect(() => {
+    if (dataUrl) {
+      setPersistentSettings({
+        dataUrl,
+        hideAllDetails,
+        sortBy,
+        sortOrder
+      });
+    }
+  }, [dataUrl, hideAllDetails, sortBy, sortOrder, setPersistentSettings]);
 
   // 加载数据
   const fetchData = async (url: string) => {
@@ -260,6 +298,13 @@ function App() {
   // 保存设置
   const saveSettings = () => {
     setDataUrl(tempDataUrl);
+    // 保存持久化设置到 localStorage
+    setPersistentSettings({
+      dataUrl: tempDataUrl,
+      hideAllDetails,
+      sortBy,
+      sortOrder
+    });
     setShowSettings(false);
   };
   
