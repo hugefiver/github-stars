@@ -174,7 +174,7 @@ async function run() {
 
         // 处理topics
         const topics = repo.repositoryTopics ? 
-          repo.repositoryTopics.nodes.map(node => node.node.topic.name) : [];
+          repo.repositoryTopics.nodes.flatMap(n => n?.node?.topic?.name) : [];
 
         processedRepos.push({
           id: index++,
