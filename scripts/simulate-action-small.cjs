@@ -2,10 +2,10 @@ const { Octokit } = require("@octokit/rest");
 const fs = require("fs");
 const path = require("path");
 
-// 模拟 GitHub Action 的执行（简化版，只获取少量数据用于测试）
+// 模拟修改后的 GitHub Action 的执行（简化版，使用GraphQL获取languages）
 async function simulateActionSmall() {
   try {
-    console.log("Simulating GitHub Action (small dataset) to fetch starred repositories...");
+    console.log("Simulating modified GitHub Action (small dataset) to fetch starred repositories with languages...");
     
     // 获取命令行参数或者使用默认值
     const args = process.argv.slice(2);
@@ -21,67 +21,154 @@ async function simulateActionSmall() {
       auth: githubToken
     });
     
-    // 只获取前几页数据用于测试
-    const repos = [];
-    const maxPages = 3; // 只获取3页数据
+    // 使用GraphQL获取用户star的仓库列表和语言信息
+    const processedRepos = [];
+    let hasNextPage = true;
+    let cursor = null;
+    let totalCount = 0;
     
-    for (let page = 1; page <= maxPages; page++) {
+    while (hasNextPage) {
+      const query = `
+        query($username: String!, $cursor: String) {
+          user(login: $username) {
+            starredRepositories(first: 10, after: $cursor, orderBy: {field: STARRED_AT, direction: DESC}) {
+              totalCount
+              pageInfo {
+                hasNextPage
+                endCursor
+              }
+              nodes {
+                id
+                name
+                fullName
+                description
+                url
+                primaryLanguage {
+                  name
+                }
+                languages(first: 10, orderBy: {field: SIZE, direction: DESC}) {
+                  edges {
+                    node {
+                      name
+                    }
+                    size
+                  }
+                  totalSize
+                }
+                stargazerCount
+                forkCount
+                updatedAt
+                createdAt
+                starredAt
+                owner {
+                  login
+                  avatarUrl
+                  url
+                }
+                repositoryTopics(first: 10) {
+                  nodes {
+                    topic {
+                      name
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      `;
+      
+      const variables = {
+        username,
+        cursor
+      };
+      
       try {
-        const { data } = await octokit.rest.activity.listReposStarredByUser({
-          username,
-          per_page: 10, // 每页只获取10个仓库
-          page: page
-        });
+        const { data } = await octokit.graphql(query, variables);
+        const starredRepos = data.user.starredRepositories;
         
-        repos.push(...data);
-        console.log(`Fetched ${data.length} repos from page ${page}`);
+        if (!totalCount) {
+          totalCount = starredRepos.totalCount;
+          console.log(`Total starred repositories: ${totalCount}`);
+        }
         
-        // 添加延迟
-        await new Promise(resolve => setTimeout(resolve, 500));
+        const nodes = starredRepos.nodes;
         
-        // 如果返回的数据少于10条，说明已经到最后一页
-        if (data.length < 10) {
+        for (const repo of nodes) {
+          // 处理语言数据
+          const languages = {};
+          if (repo.languages && repo.languages.edges && repo.languages.totalSize > 0) {
+            const totalSize = repo.languages.totalSize;
+            for (const edge of repo.languages.edges) {
+              const languageName = edge.node.name;
+              const size = edge.size;
+              languages[languageName] = {
+                bytes: size,
+                percentage: ((size / totalSize) * 100).toFixed(2)
+              };
+            }
+          }
+          
+          // 处理topics
+          const topics = repo.repositoryTopics ? 
+            repo.repositoryTopics.nodes.map(node => node.topic.name) : [];
+          
+          processedRepos.push({
+            id: parseInt(repo.id.replace(/[^0-9]/g, '')),
+            name: repo.name,
+            full_name: repo.fullName,
+            html_url: repo.url,
+            description: repo.description,
+            language: repo.primaryLanguage ? repo.primaryLanguage.name : null,
+            languages: languages,
+            stargazers_count: repo.stargazerCount,
+            forks_count: repo.forkCount,
+            updated_at: repo.updatedAt,
+            created_at: repo.createdAt,
+            starred_at: repo.starredAt,
+            owner: {
+              login: repo.owner.login,
+              avatar_url: repo.owner.avatarUrl,
+              html_url: repo.owner.url
+            },
+            topics: topics
+          });
+        }
+        
+        console.log(`Processed ${nodes.length} repositories, total: ${processedRepos.length}/${totalCount}`);
+        
+        // 检查是否还有下一页
+        hasNextPage = starredRepos.pageInfo.hasNextPage;
+        cursor = starredRepos.pageInfo.endCursor;
+        
+        // 限制测试只处理前30个仓库
+        if (processedRepos.length >= 30) {
+          console.log("Limiting to first 30 repositories for small dataset");
           break;
         }
+        
+        // 添加延迟以避免速率限制
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
       } catch (error) {
-        console.error(`Error fetching page ${page}:`, error.message);
+        console.error("Error fetching data:", error.message);
         break;
       }
     }
     
-    console.log(`Total repositories fetched: ${repos.length}`);
+    console.log(`Total repositories processed: ${processedRepos.length}`);
     
-    // 处理数据格式
-    const processedRepos = repos.map(repo => ({
-      id: repo.id,
-      name: repo.name,
-      full_name: repo.full_name,
-      html_url: repo.html_url,
-      description: repo.description,
-      language: repo.language,
-      stargazers_count: repo.stargazers_count,
-      forks_count: repo.forks_count,
-      updated_at: repo.updated_at,
-      created_at: repo.created_at,
-      owner: {
-        login: repo.owner.login,
-        avatar_url: repo.owner.avatar_url,
-        html_url: repo.owner.html_url
-      },
-      topics: repo.topics || []
-    }));
-    
-    // 确保 data 目录存在
-    const dataDir = path.dirname(outputFile);
-    if (!fs.existsSync(dataDir)) {
-      fs.mkdirSync(dataDir, { recursive: true });
+    // 确保输出目录存在
+    const outputDir = path.dirname(outputFile);
+    if (!fs.existsSync(outputDir)) {
+      fs.mkdirSync(outputDir, { recursive: true });
     }
     
-    // 保存数据到文件
+    // 保存完整数据到文件
     fs.writeFileSync(outputFile, JSON.stringify(processedRepos, null, 2));
-    console.log(`Data saved to ${outputFile}`);
+    console.log(`Full data saved to ${outputFile}`);
     
-    // 同时生成一个简化版本用于前端展示
+    // 生成简化版本（包含languages字段）
     const simplifiedRepos = processedRepos.map(repo => ({
       id: repo.id,
       name: repo.name,
@@ -89,34 +176,53 @@ async function simulateActionSmall() {
       html_url: repo.html_url,
       description: repo.description,
       language: repo.language,
+      languages: repo.languages, // 添加languages字段
       stargazers_count: repo.stargazers_count,
       forks_count: repo.forks_count,
-      updated_at: repo.updated_at,
+      updated_at: repo.updatedAt,
       created_at: repo.created_at,
+      starred_at: repo.starredAt,
       owner_login: repo.owner.login,
       owner_avatar_url: repo.owner.avatar_url,
       owner_html_url: repo.owner.html_url,
       topics: repo.topics
     }));
     
-    const simplifiedOutputDir = path.dirname(simpleOutputFile);
-    if (!fs.existsSync(simplifiedOutputDir)) {
-      fs.mkdirSync(simplifiedOutputDir, { recursive: true });
+    // 确保简化版输出目录存在
+    const simpleOutputDir = path.dirname(simpleOutputFile);
+    if (!fs.existsSync(simpleOutputDir)) {
+      fs.mkdirSync(simpleOutputDir, { recursive: true });
     }
     
+    // 保存简化数据到文件
     fs.writeFileSync(simpleOutputFile, JSON.stringify(simplifiedRepos, null, 2));
     console.log(`Simplified data saved to ${simpleOutputFile}`);
     
     console.log("\nSimulation completed successfully!");
     console.log(`- Full data: ${processedRepos.length} repositories`);
-    console.log(`- Saved to: ${outputFile}`);
-    console.log(`- Simplified data saved to: ${simpleOutputFile}`);
+    console.log(`- Simplified data: ${simplifiedRepos.length} repositories`);
     
-    // 显示所有仓库作为示例
-    console.log("\nRepositories fetched:");
-    processedRepos.forEach((repo, index) => {
-      console.log(`${index + 1}. ${repo.full_name} (${repo.stargazers_count} stars)`);
+    // 显示前5个仓库的语言信息作为示例
+    console.log("\nFirst 5 repositories with languages:");
+    processedRepos.slice(0, 5).forEach((repo, index) => {
+      console.log(`${index + 1}. ${repo.full_name}`);
+      console.log(`   Primary language: ${repo.language || 'None'}`);
+      if (Object.keys(repo.languages).length > 0) {
+        console.log(`   All languages:`);
+        Object.entries(repo.languages).forEach(([lang, info]) => {
+          console.log(`     - ${lang}: ${info.percentage}% (${info.bytes} bytes)`);
+        });
+      } else {
+        console.log(`   No detailed language data available`);
+      }
+      console.log('');
     });
+    
+    // 验证简化版本是否包含languages字段
+    const hasLanguagesInSimplified = simplifiedRepos.some(repo => repo.languages && Object.keys(repo.languages).length > 0);
+    console.log(`\nValidation:`);
+    console.log(`- Simplified version contains languages field: ${hasLanguagesInSimplified}`);
+    console.log(`- Repositories with language data: ${simplifiedRepos.filter(repo => repo.languages && Object.keys(repo.languages).length > 0).length}/${simplifiedRepos.length}`);
     
   } catch (error) {
     console.error("Error during simulation:", error.message);

@@ -414,6 +414,68 @@
   margin: 10px 0;
 }
 
+
+/* 仓库语言比例样式 */
+.repo-languages {
+  margin: 15px 0;
+  padding: 15px;
+  background-color: #f8f9fa;
+  border-radius: 6px;
+  border: 1px solid #e1e4e8;
+}
+
+.repo-languages h4 {
+  margin: 0 0 12px 0;
+  color: #24292e;
+  font-size: 0.95em;
+  font-weight: 600;
+}
+
+.repo-language-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.repo-language-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.repo-language-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.85em;
+}
+
+.repo-language-name {
+  font-weight: 500;
+  color: #24292e;
+}
+
+.repo-language-percentage {
+  color: #586069;
+  font-weight: 500;
+}
+
+.repo-language-bar {
+  height: 6px;
+  background-color: #e1e4e8;
+  border-radius: 3px;
+  overflow: hidden;
+  position: relative;
+}
+
+.repo-language-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #0366d6, #586069);
+  border-radius: 3px;
+  transition: width 0.3s ease;
+  min-width: 1px;
+}
+
 /* 响应式设计 */
 @media (max-width: 768px) {
   .app {
@@ -450,4 +512,5 @@
   .modal-content {
     width: 95%;
   }
+  
 }

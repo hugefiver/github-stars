@@ -30,7 +30,6 @@
         "project_structure": {
           "src/": "前端源代码",
           "action/": "GitHub Action代码",
-          "data/": "存储星标仓库数据",
           "scripts/": "辅助脚本",
           ".github/workflows/": "GitHub Actions工作流配置"
         }

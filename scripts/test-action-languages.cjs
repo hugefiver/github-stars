@@ -1,34 +1,37 @@
-const core = require('@actions/core');
 const { Octokit } = require("@octokit/rest");
 const fs = require("fs");
 const path = require("path");
 
-async function run() {
+// 模拟修改后的 GitHub Action 的执行
+async function testActionLanguages() {
   try {
-    // 获取输入参数
-    const githubToken = core.getInput('github-token');
-    const username = core.getInput('username');
-    const outputFile = core.getInput('output-file');
-    const simpleOutputFile = core.getInput('simple-output-file');
-
+    console.log("Testing modified GitHub Action to fetch starred repositories with languages...");
+    
+    // 获取命令行参数或者使用默认值
+    const args = process.argv.slice(2);
+    const username = args[0] || "hugefiver";
+    const outputFile = args[1] || "./data/starred-repos-test.json";
+    const simpleOutputFile = args[2] || "./data/starred-repos-simple-test.json";
+    
     console.log(`Fetching starred repositories for user: ${username}`);
-
-    // 创建 Octokit 实例
+    
+    // 创建 Octokit 实例（使用环境变量中的 token，如果没有则不认证）
+    const githubToken = process.env.GITHUB_TOKEN;
     const octokit = new Octokit({
       auth: githubToken
     });
-
+    
     // 使用GraphQL获取用户star的仓库列表和语言信息
     const processedRepos = [];
     let hasNextPage = true;
     let cursor = null;
     let totalCount = 0;
-
+    
     while (hasNextPage) {
       const query = `
         query($username: String!, $cursor: String) {
           user(login: $username) {
-            starredRepositories(first: 100, after: $cursor, orderBy: {field: STARRED_AT, direction: DESC}) {
+            starredRepositories(first: 10, after: $cursor, orderBy: {field: STARRED_AT, direction: DESC}) {
               totalCount
               pageInfo {
                 hasNextPage
@@ -74,20 +77,20 @@ async function run() {
           }
         }
       `;
-
+      
       const variables = {
         username,
         cursor
       };
-
+      
       const { data } = await octokit.graphql(query, variables);
       const starredRepos = data.user.starredRepositories;
-
+      
       if (!totalCount) {
         totalCount = starredRepos.totalCount;
         console.log(`Total starred repositories: ${totalCount}`);
       }
-
+      
       const nodes = starredRepos.nodes;
       
       for (const repo of nodes) {
@@ -104,11 +107,11 @@ async function run() {
             };
           }
         }
-
+        
         // 处理topics
         const topics = repo.repositoryTopics ? 
           repo.repositoryTopics.nodes.map(node => node.topic.name) : [];
-
+        
         processedRepos.push({
           id: parseInt(repo.id.replace(/[^0-9]/g, '')),
           name: repo.name,
@@ -130,28 +133,31 @@ async function run() {
           topics: topics
         });
       }
-
+      
       console.log(`Processed ${nodes.length} repositories, total: ${processedRepos.length}/${totalCount}`);
-
+      
       // 检查是否还有下一页
       hasNextPage = starredRepos.pageInfo.hasNextPage;
       cursor = starredRepos.pageInfo.endCursor;
+      
+      // 限制测试只处理前20个仓库
+      if (processedRepos.length >= 20) {
+        console.log("Limiting test to first 20 repositories");
+        break;
+      }
     }
     
-    console.log(`All repositories processed: ${processedRepos.length}`);
-
+    console.log(`Test repositories processed: ${processedRepos.length}`);
+    
     // 确保输出目录存在
     const outputDir = path.dirname(outputFile);
     if (!fs.existsSync(outputDir)) {
       fs.mkdirSync(outputDir, { recursive: true });
     }
-
+    
     // 保存完整数据到文件
     fs.writeFileSync(outputFile, JSON.stringify(processedRepos, null, 2));
-    console.log(`Full data saved to ${outputFile}`);
-
-    // 检查是否在生产环境中（通过环境变量判断）
-    const isProduction = process.env.NODE_ENV === 'production' || process.env.GITHUB_ACTIONS === 'true';
+    console.log(`Full test data saved to ${outputFile}`);
     
     // 生成简化版本（包含languages字段）
     const simplifiedRepos = processedRepos.map(repo => ({
@@ -172,29 +178,47 @@ async function run() {
       owner_html_url: repo.owner.html_url,
       topics: repo.topics
     }));
-
+    
     // 确保简化版输出目录存在
     const simpleOutputDir = path.dirname(simpleOutputFile);
     if (!fs.existsSync(simpleOutputDir)) {
       fs.mkdirSync(simpleOutputDir, { recursive: true });
     }
-
+    
     // 保存简化数据到文件
     fs.writeFileSync(simpleOutputFile, JSON.stringify(simplifiedRepos, null, 2));
-    console.log(`Simplified data saved to ${simpleOutputFile}`);
+    console.log(`Simplified test data saved to ${simpleOutputFile}`);
     
-    if (isProduction) {
-      console.log('Production environment detected, but simplified data generation is enabled');
-    }
-
-    // 设置输出参数
-    core.setOutput('repositories-count', processedRepos.length.toString());
-    core.setOutput('output-file', outputFile);
-    core.setOutput('simple-output-file', simpleOutputFile);
-
+    console.log("\nTest completed successfully!");
+    console.log(`- Full data: ${processedRepos.length} repositories`);
+    console.log(`- Simplified data: ${simplifiedRepos.length} repositories`);
+    
+    // 显示前3个仓库的语言信息作为示例
+    console.log("\nFirst 3 repositories with languages:");
+    processedRepos.slice(0, 3).forEach((repo, index) => {
+      console.log(`${index + 1}. ${repo.full_name}`);
+      console.log(`   Primary language: ${repo.language || 'None'}`);
+      if (Object.keys(repo.languages).length > 0) {
+        console.log(`   All languages:`);
+        Object.entries(repo.languages).forEach(([lang, info]) => {
+          console.log(`     - ${lang}: ${info.percentage}% (${info.bytes} bytes)`);
+        });
+      } else {
+        console.log(`   No detailed language data available`);
+      }
+      console.log('');
+    });
+    
+    // 验证简化版本是否包含languages字段
+    const hasLanguagesInSimplified = simplifiedRepos.some(repo => repo.languages && Object.keys(repo.languages).length > 0);
+    console.log(`\nValidation:`);
+    console.log(`- Simplified version contains languages field: ${hasLanguagesInSimplified}`);
+    console.log(`- Repositories with language data: ${simplifiedRepos.filter(repo => repo.languages && Object.keys(repo.languages).length > 0).length}/${simplifiedRepos.length}`);
+    
   } catch (error) {
-    core.setFailed(`Error fetching starred repositories: ${error.message}`);
+    console.error("Error during test:", error.message);
+    process.exit(1);
   }
 }
 
-run();
+testActionLanguages();

@@ -23,6 +23,9 @@ function App() {
   
   // 设置状态
   const [showSettings, setShowSettings] = useState(false);
+  
+  // 排序方向状态
+  const [sortOrder, setSortOrder] = useState('desc');
   // 在生产环境中使用完整版本，开发环境中使用简化版本
   const defaultDataUrl = import.meta.env.PROD ? './data/starred-repos.json' : './data/starred-repos-simple.json';
   const [dataUrl, setDataUrl] = useState(defaultDataUrl);
@@ -50,7 +53,7 @@ function App() {
   useEffect(() => {
     const miniSearch = new MiniSearch({
       fields: ['name', 'full_name', 'description', 'language', 'topics'],
-      storeFields: ['id', 'name', 'full_name', 'description', 'language', 'topics', 'html_url', 'stargazers_count', 'forks_count', 'updated_at', 'created_at'],
+      storeFields: ['id', 'name', 'full_name', 'description', 'language', 'languages', 'topics', 'html_url', 'stargazers_count', 'forks_count', 'updated_at', 'created_at', 'starred_at'],
       searchOptions: {
         boost: { name: 2, full_name: 2, topics: 1.5 },
         fuzzy: 0.2,
@@ -83,6 +86,34 @@ function App() {
       }
     });
     return Array.from(langSet).sort();
+  }, [repos]);
+
+  // 计算语言比例
+  const languageStats = useMemo(() => {
+    const langCount = {};
+    let totalWithLanguage = 0;
+    
+    repos.forEach(repo => {
+      if (repo.language) {
+        langCount[repo.language] = (langCount[repo.language] || 0) + 1;
+        totalWithLanguage++;
+      }
+    });
+    
+    const stats = Object.entries(langCount)
+      .map(([language, count]) => ({
+        language,
+        count,
+        percentage: totalWithLanguage > 0 ? ((count / totalWithLanguage) * 100).toFixed(1) : 0
+      }))
+      .sort((a, b) => b.count - a.count);
+    
+    return {
+      stats,
+      totalWithLanguage,
+      totalRepos: repos.length,
+      noLanguageCount: repos.length - totalWithLanguage
+    };
   }, [repos]);
 
   // 获取所有标签
@@ -142,24 +173,36 @@ function App() {
 
     // 排序
     result.sort((a, b) => {
+      let comparison = 0;
       switch (sortBy) {
         case 'stars':
-          return b.stargazers_count - a.stargazers_count;
+          comparison = b.stargazers_count - a.stargazers_count;
+          break;
         case 'forks':
-          return b.forks_count - a.forks_count;
+          comparison = b.forks_count - a.forks_count;
+          break;
         case 'updated':
-          return new Date(b.updated_at) - new Date(a.updated_at);
+          comparison = new Date(b.updated_at) - new Date(a.updated_at);
+          break;
         case 'created':
-          return new Date(b.created_at) - new Date(a.created_at);
+          comparison = new Date(b.created_at) - new Date(a.created_at);
+          break;
+        case 'starred':
+          comparison = new Date(b.starred_at) - new Date(a.starred_at);
+          break;
         case 'name':
-          return a.name.localeCompare(b.name);
+          comparison = a.name.localeCompare(b.name);
+          break;
         default:
-          return 0;
+          comparison = 0;
       }
+      
+      // 应用排序方向
+      return sortOrder === 'desc' ? comparison : -comparison;
     });
 
     return result;
-  }, [repos, searchTerm, selectedLanguage, selectedTag, sortBy, searchIndex]);
+  }, [repos, searchTerm, selectedLanguage, selectedTag, sortBy, sortOrder, searchIndex]);
 
   // 显示的数据
   const displayedRepos = useMemo(() => {
@@ -169,7 +212,7 @@ function App() {
   // 重置显示数量
   useEffect(() => {
     setDisplayedCount(itemsPerLoad);
-  }, [searchTerm, selectedLanguage, selectedTag, sortBy]);
+  }, [searchTerm, selectedLanguage, selectedTag, sortBy, sortOrder]);
 
   // 无限滚动处理
   useEffect(() => {
@@ -295,7 +338,17 @@ function App() {
               <option value="forks">Sort by Forks</option>
               <option value="updated">Sort by Updated</option>
               <option value="created">Sort by Created</option>
+              <option value="starred">Sort by Starred</option>
               <option value="name">Sort by Name</option>
+            </select>
+            
+            <select
+              value={sortOrder}
+              onChange={(e) => setSortOrder(e.target.value)}
+              className="filter-select"
+            >
+              <option value="desc">Descending</option>
+              <option value="asc">Ascending</option>
             </select>
           </div>
         </div>
@@ -334,6 +387,31 @@ function App() {
                     </span>
                   ))}
                 </div>
+
+                {/* 语言比例显示 */}
+                {repo.languages && Object.keys(repo.languages).length > 0 && (
+                  <div className="repo-languages">
+                    <h4>Language Distribution</h4>
+                    <div className="repo-language-list">
+                      {Object.entries(repo.languages)
+                        .sort(([,a], [,b]) => parseFloat(b.percentage) - parseFloat(a.percentage))
+                        .map(([language, data]) => (
+                          <div key={language} className="repo-language-item">
+                            <div className="repo-language-info">
+                              <span className="repo-language-name">{language}</span>
+                              <span className="repo-language-percentage">{data.percentage}%</span>
+                            </div>
+                            <div className="repo-language-bar">
+                              <div 
+                                className="repo-language-bar-fill" 
+                                style={{ width: `${data.percentage}%` }}
+                              ></div>
+                            </div>
+                          </div>
+                        ))}
+                    </div>
+                  </div>
+                )}
                 
                 <div className="repo-stats">
                   <span className="stat">
@@ -348,6 +426,12 @@ function App() {
                     <span className="stat-icon">📅</span>
                     Updated {formatDate(repo.updated_at)}
                   </span>
+                  {repo.starred_at && (
+                    <span className="stat">
+                      <span className="stat-icon">⭐</span>
+                      Starred {formatDate(repo.starred_at)}
+                    </span>
+                  )}
                 </div>
               </div>
             ))
