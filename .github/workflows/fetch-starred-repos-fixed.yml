@@ -1,0 +1,75 @@
+name: Fetch Starred Repositories Fixed
+
+on:
+  schedule:
+    # 每天 UTC 时间 0 点运行
+    - cron: '0 0 * * *'
+  workflow_dispatch: # 允许手动触发
+  push:
+    branches:
+      - main
+
+jobs:
+  fetch-starred-repos:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        
+      - name: Setup Node.js for Action
+        uses: actions/setup-node@v3
+        with:
+          node-version: '24'
+          
+      - name: Install Action dependencies and build
+        run: |
+          cd action
+          npm install
+          npm run build
+          ls -la dist/
+        
+      - name: Fetch starred repositories
+        uses: ./action
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          username: ${{ github.actor }}
+          output-file: ./data/starred-repos.json
+          simple-output-file: ./data/starred-repos-simple.json
+          
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 10
+      
+      - name: Setup Node.js for frontend
+        uses: actions/setup-node@v3
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+          cache-dependency-path: pnpm-lock.yaml
+          
+      - name: Install frontend dependencies
+        run: pnpm install
+          
+      - name: Build frontend
+        run: pnpm run build
+          
+      - name: Move data files to docs directory
+        run: |
+          mkdir -p docs/data
+          cp data/starred-repos-simple.json docs/data/
+          
+      - name: Commit and push changes
+        run: |
+          git config --global user.email "action@github.com"
+          git config --global user.name "GitHub Action"
+          git add data/ docs/
+          git commit -m "Update starred repositories data and build frontend" || echo "No changes to commit"
+          git push
+          
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./docs
