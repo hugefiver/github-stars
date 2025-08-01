@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { useAtom, useSetAtom } from 'jotai';
+import { atom, useAtom, useSetAtom } from 'jotai';
 import MiniSearch from 'minisearch';
 import { Repository, LanguageStat, LanguageStats } from './types';
 import {
@@ -11,9 +11,7 @@ import {
   dataUrlAtom,
   tempDataUrlAtom,
   displayedCountAtom,
-  loadingMoreAtom,
-  persistentSettingsAtom,
-  initializeSettingsAtom
+  loadingMoreAtom
 } from './store/atoms';
 import './App.scss';
 
@@ -33,8 +31,7 @@ function App() {
   const [showSettings, setShowSettings] = useAtom(showSettingsAtom);
   const [expandedRepos, setExpandedRepos] = useAtom(expandedReposAtom);
   const [hideAllDetails, setHideAllDetails] = useAtom(hideAllDetailsAtom);
-  const [dataUrl, setDataUrl] = useAtom(dataUrlAtom);
-  const [tempDataUrl, setTempDataUrl] = useAtom(tempDataUrlAtom);
+  const [atomDataUrl, setAtomDataUrl] = useAtom(dataUrlAtom);
   const [displayedCount, setDisplayedCount] = useAtom(displayedCountAtom);
   const [loadingMore, setLoadingMore] = useAtom(loadingMoreAtom);
   
@@ -45,49 +42,31 @@ function App() {
   
   // 在生产环境中使用完整版本，开发环境中使用简化版本
   const defaultDataUrl = import.meta.env.PROD ? './data/starred-repos.json' : './data/starred-repos-simple.json';
-  
-  // 初始化设置
-  const initializeSettings = useSetAtom(initializeSettingsAtom);
-  const [persistentSettings, setPersistentSettings] = useAtom(persistentSettingsAtom);
-  
-  // 组件挂载时初始化设置
+  const dataUrl = atomDataUrl || defaultDataUrl;
+
+  // 组件挂载时设置默认值
   useEffect(() => {
-    initializeSettings();
-    // 如果没有保存的 dataUrl，使用默认值
-    if (!dataUrl) {
-      setDataUrl(defaultDataUrl);
-      setTempDataUrl(defaultDataUrl);
-    }
     // 清空搜索词，不记忆搜索状态
     setSearchTerm('');
     setSelectedLanguage('');
     setSelectedTag('');
-  }, [initializeSettings, dataUrl, setDataUrl, setTempDataUrl, defaultDataUrl, setSearchTerm, setSelectedLanguage, setSelectedTag]);
-
-  // 当重要设置改变时自动保存到 localStorage
-  useEffect(() => {
-    if (dataUrl) {
-      setPersistentSettings({
-        dataUrl,
-        hideAllDetails,
-        sortBy,
-        sortOrder
-      });
-    }
-  }, [dataUrl, hideAllDetails, sortBy, sortOrder, setPersistentSettings]);
+  }, [dataUrl, setAtomDataUrl, defaultDataUrl, setSearchTerm, setSelectedLanguage, setSelectedTag]);
 
   // 加载数据
+  let response: Response | null = null;
   const fetchData = async (url: string) => {
     try {
       setLoading(true);
       setError(null);
-      const response = await fetch(url);
+      response = await fetch(url);
       if (!response.ok) {
         throw new Error(`Failed to fetch data: ${response.status} ${response.statusText}`);
       }
       const data = await response.json();
       setRepos(data);
     } catch (err) {
+      console.error('Error fetching data:', err);
+      console.log(response);
       setError(err instanceof Error ? err.message : 'An unknown error occurred');
     } finally {
       setLoading(false);
@@ -297,20 +276,12 @@ function App() {
   
   // 保存设置
   const saveSettings = () => {
-    setDataUrl(tempDataUrl);
-    // 保存持久化设置到 localStorage
-    setPersistentSettings({
-      dataUrl: tempDataUrl,
-      hideAllDetails,
-      sortBy,
-      sortOrder
-    });
     setShowSettings(false);
   };
   
   // 重置设置
   const resetSettings = () => {
-    setTempDataUrl(defaultDataUrl);
+    setAtomDataUrl('');
   };
 
   if (loading) {
@@ -598,8 +569,9 @@ function App() {
                 <input
                   type="text"
                   id="dataUrl"
-                  value={tempDataUrl}
-                  onChange={(e) => setTempDataUrl(e.target.value)}
+                  value={atomDataUrl}
+                  placeholder={defaultDataUrl}
+                  onChange={(e) => setAtomDataUrl(e.target.value)}
                   className="form-input"
                 />
                 <p className="help-text">
