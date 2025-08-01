@@ -23,8 +23,10 @@ function App() {
   
   // 设置状态
   const [showSettings, setShowSettings] = useState(false);
-  const [dataUrl, setDataUrl] = useState('./data/starred-repos-simple.json');
-  const [tempDataUrl, setTempDataUrl] = useState('./data/starred-repos-simple.json');
+  // 在生产环境中使用完整版本，开发环境中使用简化版本
+  const defaultDataUrl = import.meta.env.PROD ? './data/starred-repos.json' : './data/starred-repos-simple.json';
+  const [dataUrl, setDataUrl] = useState(defaultDataUrl);
+  const [tempDataUrl, setTempDataUrl] = useState(defaultDataUrl);
 
   // 加载数据
   const fetchData = async (url) => {
@@ -213,7 +215,7 @@ function App() {
   
   // 重置设置
   const resetSettings = () => {
-    setTempDataUrl('./data/starred-repos-simple.json');
+    setTempDataUrl(defaultDataUrl);
   };
 
   if (loading) {
@@ -396,7 +398,7 @@ function App() {
                 />
                 <p className="help-text">
                   Enter the URL to your starred repositories JSON file. 
-                  Default: ./data/starred-repos-simple.json
+                  Default: {defaultDataUrl}
                 </p>
               </div>
             </div>

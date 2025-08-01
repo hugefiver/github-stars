@@ -72,33 +72,41 @@ async function run() {
     fs.writeFileSync(outputFile, JSON.stringify(processedRepos, null, 2));
     console.log(`Full data saved to ${outputFile}`);
 
-    // 同时生成一个简化版本用于前端展示
-    const simplifiedRepos = processedRepos.map(repo => ({
-      id: repo.id,
-      name: repo.name,
-      full_name: repo.full_name,
-      html_url: repo.html_url,
-      description: repo.description,
-      language: repo.language,
-      stargazers_count: repo.stargazers_count,
-      forks_count: repo.forks_count,
-      updated_at: repo.updated_at,
-      created_at: repo.created_at,
-      owner_login: repo.owner.login,
-      owner_avatar_url: repo.owner.avatar_url,
-      owner_html_url: repo.owner.html_url,
-      topics: repo.topics
-    }));
+    // 检查是否在生产环境中（通过环境变量判断）
+    const isProduction = process.env.NODE_ENV === 'production' || process.env.GITHUB_ACTIONS === 'true';
+    
+    // 只在非生产环境中生成简化版本
+    if (!isProduction) {
+      // 同时生成一个简化版本用于前端展示
+      const simplifiedRepos = processedRepos.map(repo => ({
+        id: repo.id,
+        name: repo.name,
+        full_name: repo.full_name,
+        html_url: repo.html_url,
+        description: repo.description,
+        language: repo.language,
+        stargazers_count: repo.stargazers_count,
+        forks_count: repo.forks_count,
+        updated_at: repo.updated_at,
+        created_at: repo.created_at,
+        owner_login: repo.owner.login,
+        owner_avatar_url: repo.owner.avatar_url,
+        owner_html_url: repo.owner.html_url,
+        topics: repo.topics
+      }));
 
-    // 确保简化版输出目录存在
-    const simpleOutputDir = path.dirname(simpleOutputFile);
-    if (!fs.existsSync(simpleOutputDir)) {
-      fs.mkdirSync(simpleOutputDir, { recursive: true });
+      // 确保简化版输出目录存在
+      const simpleOutputDir = path.dirname(simpleOutputFile);
+      if (!fs.existsSync(simpleOutputDir)) {
+        fs.mkdirSync(simpleOutputDir, { recursive: true });
+      }
+
+      // 保存简化数据到文件
+      fs.writeFileSync(simpleOutputFile, JSON.stringify(simplifiedRepos, null, 2));
+      console.log(`Simplified data saved to ${simpleOutputFile}`);
+    } else {
+      console.log('Production environment detected, skipping simplified data generation');
     }
-
-    // 保存简化数据到文件
-    fs.writeFileSync(simpleOutputFile, JSON.stringify(simplifiedRepos, null, 2));
-    console.log(`Simplified data saved to ${simpleOutputFile}`);
 
     // 设置输出参数
     core.setOutput('repositories-count', repos.length.toString());

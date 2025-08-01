@@ -31,6 +31,7 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           username: ${{ github.actor }}
           output-file: ./data/starred-repos.json
+          # 在生产环境中不生成简化版本文件
           simple-output-file: ./data/starred-repos-simple.json
           
       - name: Setup pnpm
@@ -54,7 +55,11 @@ jobs:
       - name: Prepare deployment files
         run: |
           mkdir -p docs/data
-          cp data/starred-repos-simple.json docs/data/
+          # 在生产环境中使用完整版本数据文件
+          cp data/starred-repos.json docs/data/starred-repos.json
+          # 删除可能存在的简化版本文件
+          rm -f docs/data/starred-repos-simple.json
+          rm -f data/starred-repos-simple.json
           # Copy built frontend files to docs directory
           cp -r dist/* docs/ || true
           
