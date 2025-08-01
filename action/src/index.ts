@@ -7,8 +7,40 @@ import { GraphQLRepository } from "./types/github";
 // Utility function for delay
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
-// Utility function for exponential backoff
-const exponentialBackoff = async (fn: () => Promise<any>, maxRetries = 5, initialDelay = 1000) => {
+// Interface for GitHub rate limit response
+interface RateLimitResponse {
+  rateLimit: {
+    limit: number;
+    remaining: number;
+    resetAt: string;
+    used: number;
+  };
+}
+
+// Function to get current rate limit status
+async function getRateLimitStatus(graphqlWithAuth: any): Promise<RateLimitResponse> {
+  const rateLimitQuery = `
+    query {
+      rateLimit {
+        limit
+        remaining
+        resetAt
+        used
+      }
+    }
+  `;
+  
+  try {
+    const response = await graphqlWithAuth(rateLimitQuery) as RateLimitResponse;
+    return response;
+  } catch (error) {
+    console.log('Failed to fetch rate limit status:', error);
+    throw error;
+  }
+}
+
+// Function to handle rate limit with intelligent waiting
+const handleRateLimit = async (graphqlWithAuth: any, fn: () => Promise<any>, maxRetries = 5) => {
   let retryCount = 0;
   
   while (retryCount < maxRetries) {
@@ -26,9 +58,32 @@ const exponentialBackoff = async (fn: () => Promise<any>, maxRetries = 5, initia
         throw error;
       }
       
-      const delayTime = initialDelay * Math.pow(2, retryCount - 1);
-      console.log(`Rate limit hit, retrying in ${delayTime}ms (attempt ${retryCount}/${maxRetries})`);
-      await delay(delayTime);
+      console.log(`Rate limit hit (attempt ${retryCount}/${maxRetries})`);
+      
+      try {
+        // Get current rate limit status
+        const rateLimitInfo = await getRateLimitStatus(graphqlWithAuth);
+        const resetAt = new Date(rateLimitInfo.rateLimit.resetAt);
+        const now = new Date();
+        const waitTimeMs = resetAt.getTime() - now.getTime();
+        
+        if (waitTimeMs > 0) {
+          const waitTimeSeconds = Math.ceil(waitTimeMs / 1000);
+          console.log(`Rate limit will reset at ${resetAt.toISOString()}`);
+          console.log(`Waiting ${waitTimeSeconds} seconds for rate limit to reset...`);
+          await delay(waitTimeMs);
+        } else {
+          // If reset time is in the past, wait a minimum time
+          console.log('Rate limit should be reset, waiting 5 seconds to be safe...');
+          await delay(5000);
+        }
+      } catch (rateLimitError) {
+        // If we can't get rate limit info, fall back to exponential backoff
+        console.log('Could not fetch rate limit info, using fallback delay');
+        const fallbackDelay = 5000 * Math.pow(2, retryCount - 1); // 5s, 10s, 20s, 40s, 80s
+        console.log(`Waiting ${fallbackDelay}ms before retry...`);
+        await delay(fallbackDelay);
+      }
     }
   }
 };
@@ -172,7 +227,7 @@ async function run() {
         cursor
       };
 
-      const response = await exponentialBackoff(async () => {
+      const response = await handleRateLimit(graphqlWithAuth, async () => {
         // Add a small delay between requests to avoid secondary rate limits
         if (cursor) {
           console.log('Waiting 500ms before next request to avoid rate limits...');
