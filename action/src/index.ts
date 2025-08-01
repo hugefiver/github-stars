@@ -4,6 +4,35 @@ import * as fs from "fs";
 import * as path from "path";
 import { GraphQLRepository } from "./types/github";
 
+// Utility function for delay
+const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+// Utility function for exponential backoff
+const exponentialBackoff = async (fn: () => Promise<any>, maxRetries = 5, initialDelay = 1000) => {
+  let retryCount = 0;
+  
+  while (retryCount < maxRetries) {
+    try {
+      return await fn();
+    } catch (error: any) {
+      retryCount++;
+      
+      // Check if it's a rate limit error
+      const isRateLimitError = error.message?.includes('rate limit') || 
+                              error.message?.includes('secondary rate limit') ||
+                              error.message?.includes('API rate limit exceeded');
+      
+      if (!isRateLimitError || retryCount >= maxRetries) {
+        throw error;
+      }
+      
+      const delayTime = initialDelay * Math.pow(2, retryCount - 1);
+      console.log(`Rate limit hit, retrying in ${delayTime}ms (attempt ${retryCount}/${maxRetries})`);
+      await delay(delayTime);
+    }
+  }
+};
+
 interface StarredRepositoryEdge {
   node: GraphQLRepository;
   starredAt: string;
@@ -143,7 +172,14 @@ async function run() {
         cursor
       };
 
-      const response = await graphqlWithAuth(query, variables) as GraphQLResponse;
+      const response = await exponentialBackoff(async () => {
+        // Add a small delay between requests to avoid secondary rate limits
+        if (cursor) {
+          console.log('Waiting 500ms before next request to avoid rate limits...');
+          await delay(500);
+        }
+        return await graphqlWithAuth(query, variables) as GraphQLResponse;
+      }) as GraphQLResponse;
       const starredRepos = response.user.starredRepositories;
 
       if (!totalCount) {
