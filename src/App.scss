@@ -241,17 +241,12 @@ input:checked + .toggle-slider:before {
   line-height: 1.5;
 }
 
-// Repository details grid
-.repo-details-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 20px;
+// Repository details section
+.repo-details-section {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
   margin: 15px 0;
-}
-
-// Repository meta info
-.repo-meta-info {
-  // Styles for the left column (topics, etc.)
 }
 
 // Repository topics
@@ -283,48 +278,42 @@ input:checked + .toggle-slider:before {
 
 // Repository languages compact
 .repo-languages-compact {
-  // Styles for the right column (language list)
+  // Styles for the language list section
 }
 
-.repo-language-list-compact {
+// New horizontal language bar styles
+.repo-language-bar-container {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
 }
 
-.repo-language-item-compact {
+.repo-language-bar-segmented {
   display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.repo-language-info-compact {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-size: 0.8em;
-  color: $secondary-text-color;
-}
-
-.repo-language-name-compact {
-  font-weight: 500;
-}
-
-.repo-language-percentage-compact {
-  font-size: 0.75em;
-}
-
-.repo-language-bar-compact {
-  height: 4px;
+  height: 10px;
   background-color: $border-color;
-  border-radius: 2px;
+  border-radius: 5px;
   overflow: hidden;
 }
 
-.repo-language-bar-fill-compact {
+.repo-language-segment {
   height: 100%;
-  background-color: $secondary-text-color;
-  border-radius: 2px;
+  min-width: 2px; // Ensure very small segments are still visible
+}
+
+.repo-language-bar-labels {
+  display: flex;
+  font-size: 0.7em;
+  color: $text-color;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.repo-language-label {
+  padding: 0 2px; // Add some padding to prevent text clipping
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 // Repository details toggle

@@ -463,47 +463,58 @@ function App() {
                   </button>
                   
                   {isDetailsExpanded && (
-                    <div className="repo-details-grid">
-                      {/* 左侧：语言比例显示 */}
-                      {repo.languages && Object.keys(repo.languages).length > 0 && (
-                        <div className="repo-languages-compact">
-                          <h4>Languages</h4>
-                          <div className="repo-language-list-compact">
-                            {Object.entries(repo.languages)
-                              .sort(([,a], [,b]) => parseFloat(b.percentage) - parseFloat(a.percentage))
-                              .map(([language, data]) => (
-                                <div key={language} className="repo-language-item-compact">
-                                  <div className="repo-language-info-compact">
-                                    <span className="repo-language-name-compact">{language}</span>
-                                    <span className="repo-language-percentage-compact">{data.percentage}%</span>
-                                  </div>
-                                  <div className="repo-language-bar-compact">
-                                    <div
-                                      className={`repo-language-bar-fill-compact lang-${language.replace(/[^a-zA-Z0-9]/g, '_')}`}
-                                      style={{ width: `${data.percentage}%` }}
-                                    ></div>
-                                  </div>
-                                </div>
-                              ))}
+                    <div className="repo-details-section">
+                      {/* 上方：Tags 和 Topics */}
+                      {repo.topics && repo.topics.length > 0 && (
+                        <div className="repo-topics-group">
+                          <h4>Topics</h4>
+                          <div className="repo-topics">
+                            {repo.topics.map(topic => (
+                              <span key={topic} className="repo-topic">
+                                {topic}
+                              </span>
+                            ))}
                           </div>
                         </div>
                       )}
 
-                      {/* 右侧：Tags 和 Topics */}
-                      <div className="repo-meta-info">
-                        {repo.topics && repo.topics.length > 0 && (
-                          <div className="repo-topics-group">
-                            <h4>Topics</h4>
-                            <div className="repo-topics">
-                              {repo.topics.map(topic => (
-                                <span key={topic} className="repo-topic">
-                                  {topic}
-                                </span>
-                              ))}
+                      {/* 下方：语言比例显示 */}
+                      {repo.languages && Object.keys(repo.languages).length > 0 && (
+                        <div className="repo-languages-compact">
+                          <h4>Languages</h4>
+                          <div className="repo-language-bar-container">
+                            <div className="repo-language-bar-segmented">
+                              {Object.entries(repo.languages)
+                                .sort(([,a], [,b]) => parseFloat(b.percentage) - parseFloat(a.percentage))
+                                .map(([language, data]) => (
+                                  parseFloat(data.percentage) >= 0.5 && (
+                                    <div
+                                      key={language}
+                                      className={`repo-language-segment lang-${language.replace(/[^a-zA-Z0-9]/g, '_')}`}
+                                      style={{ width: `${data.percentage}%` }}
+                                      title={`${language}: ${data.percentage}%`}
+                                    ></div>
+                                  )
+                                ))}
+                            </div>
+                            <div className="repo-language-bar-labels">
+                              {Object.entries(repo.languages)
+                                .sort(([,a], [,b]) => parseFloat(b.percentage) - parseFloat(a.percentage))
+                                .map(([language, data]) => (
+                                  parseFloat(data.percentage) >= 0.5 && (
+                                    <span
+                                      key={language}
+                                      className="repo-language-label"
+                                      style={{ width: `${data.percentage}%` }}
+                                    >
+                                      {language}
+                                    </span>
+                                  )
+                                ))}
                             </div>
                           </div>
-                        )}
-                      </div>
+                        </div>
+                      )}
                     </div>
                   )}
 
