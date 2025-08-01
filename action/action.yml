@@ -1,0 +1,36 @@
+name: 'Fetch GitHub Starred Repositories'
+description: 'A GitHub Action to fetch and store information about starred repositories'
+author: 'GitHub Stars Search'
+
+inputs:
+  github-token:
+    description: 'GitHub token for authentication'
+    required: false
+    default: ${{ github.token }}
+  username:
+    description: 'GitHub username to fetch starred repositories for'
+    required: true
+  output-file:
+    description: 'Path to save the starred repositories data'
+    required: false
+    default: './starred-repos.json'
+  simple-output-file:
+    description: 'Path to save the simplified starred repositories data'
+    required: false
+    default: './starred-repos-simple.json'
+
+outputs:
+  repositories-count:
+    description: 'The number of starred repositories fetched'
+  output-file:
+    description: 'The path to the output file with full repository data'
+  simple-output-file:
+    description: 'The path to the output file with simplified repository data'
+
+runs:
+  using: 'node24'
+  main: 'dist/index.js'
+
+branding:
+  icon: 'star'
+  color: 'blue'

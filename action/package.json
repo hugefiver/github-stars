@@ -1,0 +1,26 @@
+{
+  "name": "fetch-github-starred-repos-action",
+  "version": "1.0.0",
+  "description": "A GitHub Action to fetch and store information about starred repositories",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "ncc build src/index.js -o dist",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "github",
+    "actions",
+    "starred",
+    "repositories"
+  ],
+  "author": "GitHub Stars Search",
+  "license": "MIT",
+  "dependencies": {
+    "@actions/core": "^1.11.1",
+    "@actions/github": "^6.0.1",
+    "@octokit/rest": "^22.0.0"
+  },
+  "devDependencies": {
+    "@vercel/ncc": "^0.38.3"
+  }
+}
