@@ -89,7 +89,7 @@ async function simulateAction() {
           cursor
         };
         
-        const { data } = await octokit.graphql(query, variables);
+        const data = await octokit.graphql(query, variables);
         const starredRepos = data.user.starredRepositories;
         
         // 重置重试计数

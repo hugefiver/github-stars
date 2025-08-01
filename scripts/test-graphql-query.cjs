@@ -58,22 +58,22 @@ async function testGraphQLQuery() {
     console.log("Query:", query);
     console.log("Variables:", variables);
     
-    const result = await octokit.graphql(query, variables);
-    console.log("Full API response:", JSON.stringify(result, null, 2));
+    const response = await octokit.graphql(query, variables);
+    console.log("Full API response:", JSON.stringify(response, null, 2));
     
     console.log("\n=== GraphQL Query Results ===");
-    if (!result || !result.user) {
+    if (!response || !response.user) {
       console.log("❌ No user data found in response");
       return false;
     }
-    console.log("User:", result.user.login);
-    console.log("Total starred repositories:", result.user.starredRepositories.totalCount);
-    console.log("Has next page:", result.user.starredRepositories.pageInfo.hasNextPage);
-    console.log("Number of edges returned:", result.user.starredRepositories.edges.length);
+    console.log("User:", response.user.login);
+    console.log("Total starred repositories:", response.user.starredRepositories.totalCount);
+    console.log("Has next page:", response.user.starredRepositories.pageInfo.hasNextPage);
+    console.log("Number of edges returned:", response.user.starredRepositories.edges.length);
     
     console.log("\n=== First Repository Details ===");
-    if (result.user.starredRepositories.edges.length > 0) {
-      const firstEdge = result.user.starredRepositories.edges[0];
+    if (response.user.starredRepositories.edges.length > 0) {
+      const firstEdge = response.user.starredRepositories.edges[0];
       const firstRepo = firstEdge.node;
       const starredAt = firstEdge.starredAt;
       console.log("ID:", firstRepo.id);
@@ -98,16 +98,16 @@ async function testGraphQLQuery() {
     
     // 检查查询是否返回了预期的数据结构
     const validation = {
-      userExists: !!result.user,
-      userLogin: result.user?.login === "hugefiver",
-      hasStarredRepos: !!result.user?.starredRepositories,
-      hasTotalCount: typeof result.user?.starredRepositories?.totalCount === 'number',
-      hasPageInfo: !!result.user?.starredRepositories?.pageInfo,
-      hasEdges: Array.isArray(result.user?.starredRepositories?.edges),
-      firstEdgeHasNode: result.user?.starredRepositories?.edges[0]?.node ? true : false,
-      firstEdgeHasStarredAt: result.user?.starredRepositories?.edges[0]?.starredAt ? true : false,
-      firstRepoHasId: result.user?.starredRepositories?.edges[0]?.node?.id ? true : false,
-      firstRepoHasLanguages: result.user?.starredRepositories?.edges[0]?.node?.languages ? true : false
+      userExists: !!response.user,
+      userLogin: response.user?.login === "hugefiver",
+      hasStarredRepos: !!response.user?.starredRepositories,
+      hasTotalCount: typeof response.user?.starredRepositories?.totalCount === 'number',
+      hasPageInfo: !!response.user?.starredRepositories?.pageInfo,
+      hasEdges: Array.isArray(response.user?.starredRepositories?.edges),
+      firstEdgeHasNode: response.user?.starredRepositories?.edges[0]?.node ? true : false,
+      firstEdgeHasStarredAt: response.user?.starredRepositories?.edges[0]?.starredAt ? true : false,
+      firstRepoHasId: response.user?.starredRepositories?.edges[0]?.node?.id ? true : false,
+      firstRepoHasLanguages: response.user?.starredRepositories?.edges[0]?.node?.languages ? true : false
     };
     
     console.log("Validation results:");
@@ -116,7 +116,7 @@ async function testGraphQLQuery() {
     });
     
     // 检查是否有任何验证失败
-    const hasErrors = Object.values(validation).some(result => !result);
+    const hasErrors = Object.values(validation).some(val => !val);
     if (hasErrors) {
       console.log("\n❌ GraphQL query has issues!");
       return false;

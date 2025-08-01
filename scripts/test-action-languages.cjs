@@ -83,8 +83,8 @@ async function testActionLanguages() {
         cursor
       };
       
-      const { data } = await octokit.graphql(query, variables);
-      const starredRepos = data.user.starredRepositories;
+      const response = await octokit.graphql(query, variables);
+      const starredRepos = response.user.starredRepositories;
       
       if (!totalCount) {
         totalCount = starredRepos.totalCount;

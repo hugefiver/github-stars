@@ -86,7 +86,7 @@ async function simulateActionSmall() {
       };
       
       try {
-        const { data } = await octokit.graphql(query, variables);
+        const data = await octokit.graphql(query, variables);
         const starredRepos = data.user.starredRepositories;
         
         if (!totalCount) {
