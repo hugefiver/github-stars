@@ -3,6 +3,7 @@
 [![AI Created](https://img.shields.io/badge/AI-Fully%20Created-blue?logo=openai)](https://github.com/Qwen3-Coder)
 [![Powered by Qwen3-Coder](https://img.shields.io/badge/Powered%20by-Qwen3--Coder-brightgreen)](https://github.com/Qwen3-Coder)
 [![Built with Void Editor](https://img.shields.io/badge/Built%20with-Void%20Editor-purple?logo=void)](https://github.com/void-editor)
+[![GLM-4.5](https://img.shields.io/badge/GLM-4.5-Enhanced-orange?logo=zhipu-ai)](https://github.com/THUDM/GLM-4)
 
 这是一个自动获取您的 GitHub Star 仓库信息并在网页上展示的工具。它包含两个主要部分：
 
@@ -62,17 +63,21 @@
 ## 前端功能
 
 ### 设置浮窗
+
 前端页面包含一个设置浮窗，允许用户自定义数据文件的位置：
+
 - 点击右上角的"⚙️ Settings"按钮打开设置
 - 输入自定义数据文件的 URL
 - 默认使用当前网站的 `./data/starred-repos-simple.json` 文件
 
 ### 搜索和过滤
+
 - **关键字搜索**：在仓库名、描述和主题标签中搜索
 - **语言过滤**：按编程语言筛选仓库
 - **多种排序**：按星数、fork 数、更新时间、创建时间和名称排序
 
 ### 响应式设计
+
 - 适配桌面和移动设备
 - 在小屏幕上自动调整布局
 
@@ -100,6 +105,7 @@ npm run build
 工作流文件位于 `.github/workflows/fetch-starred-repos.yml`，默认配置为每天自动运行一次。
 
 工作流现已优化：
+
 - 统一使用 Node.js 24 环境
 - 改进了依赖安装和构建过程
 - 使用最新的 GitHub Actions 版本
