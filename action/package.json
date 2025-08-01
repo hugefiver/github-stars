@@ -5,7 +5,8 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
-    "build": "node build.js",
+    "build": "ncc build src/index.ts -o dist --minify",
+    "build:builder": "tsc build.ts --outDir . --target esnext --module commonjs --moduleResolution node --esModuleInterop --allowSyntheticDefaultImports --strict --skipLibCheck --forceConsistentCasingInFileNames",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [
@@ -19,12 +20,13 @@
   "dependencies": {
     "@actions/core": "^1.11.1",
     "@actions/github": "^6.0.1",
+    "@octokit/graphql": "^9.0.1",
     "@octokit/rest": "^22.0.0"
   },
   "devDependencies": {
-    "@vercel/ncc": "^0.38.3",
-    "typescript": "^5.0.0",
     "@types/node": "^20.0.0",
-    "ts-node": "^10.9.1"
+    "@vercel/ncc": "^0.38.3",
+    "ts-node": "^10.9.1",
+    "typescript": "^5.0.0"
   }
 }

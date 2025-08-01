@@ -1,32 +1,127 @@
 import * as core from '@actions/core';
-import { Octokit } from "@octokit/rest";
+import { graphql } from "@octokit/graphql";
 import * as fs from "fs";
 import * as path from "path";
-import { GraphQLResponse, ProcessedRepository } from "./types/github";
 
-async function run(): Promise<void> {
+interface RepositoryNode {
+  id: string;
+  name: string;
+  nameWithOwner: string;
+  description: string | null;
+  url: string;
+  primaryLanguage: {
+    name: string;
+  } | null;
+  languages: {
+    edges: Array<{
+      node: {
+        name: string;
+      };
+      size: number;
+    }>;
+    totalSize: number;
+  } | null;
+  stargazerCount: number;
+  forkCount: number;
+  updatedAt: string;
+  createdAt: string;
+  owner: {
+    login: string;
+    avatarUrl: string;
+    url: string;
+  };
+  repositoryTopics: {
+    nodes: Array<{
+      topic: {
+        name: string;
+      };
+    }>;
+  } | null;
+}
+
+interface StarredRepositoryEdge {
+  node: RepositoryNode;
+  starredAt: string;
+}
+
+interface GraphQLResponse {
+  user: {
+    starredRepositories: {
+      totalCount: number;
+      pageInfo: {
+        hasNextPage: boolean;
+        endCursor: string | null;
+      };
+      edges: StarredRepositoryEdge[];
+    };
+  };
+}
+
+interface ProcessedRepository {
+  id: number;
+  name: string;
+  full_name: string;
+  html_url: string;
+  description: string | null;
+  language: string | null;
+  languages: Record<string, { bytes: number; percentage: string }>;
+  stargazers_count: number;
+  forks_count: number;
+  updated_at: string;
+  created_at: string;
+  starred_at: string;
+  owner: {
+    login: string;
+    avatar_url: string;
+    html_url: string;
+  };
+  topics: string[];
+}
+
+interface SimplifiedRepository {
+  id: number;
+  name: string;
+  full_name: string;
+  html_url: string;
+  description: string | null;
+  language: string | null;
+  languages: Record<string, { bytes: number; percentage: string }>;
+  stargazers_count: number;
+  forks_count: number;
+  updated_at: string;
+  created_at: string;
+  starred_at: string;
+  owner_login: string;
+  owner_avatar_url: string;
+  owner_html_url: string;
+  topics: string[];
+}
+
+async function run() {
   try {
     // 获取输入参数
-    const githubToken: string = core.getInput('github-token');
-    const username: string = core.getInput('username');
-    const outputFile: string = core.getInput('output-file');
-    const simpleOutputFile: string = core.getInput('simple-output-file');
+    const githubToken = core.getInput('github-token');
+    const username = core.getInput('username');
+    const outputFile = core.getInput('output-file');
+    const simpleOutputFile = core.getInput('simple-output-file');
 
     console.log(`Fetching starred repositories for user: ${username}`);
 
-    // 创建 Octokit 实例
-    const octokit: Octokit = new Octokit({
-      auth: githubToken
+    // 创建 graphql 实例
+    const graphqlWithAuth = graphql.defaults({
+      headers: {
+        authorization: `token ${githubToken}`,
+      },
     });
 
     // 使用GraphQL获取用户star的仓库列表和语言信息
     const processedRepos: ProcessedRepository[] = [];
-    let hasNextPage: boolean = true;
+    let hasNextPage = true;
     let cursor: string | null = null;
-    let totalCount: number = 0;
+    let totalCount = 0;
 
     while (hasNextPage) {
-      const query: string = `
+      const query = `
         query($username: String!, $cursor: String) {
           user(login: $username) {
             starredRepositories(first: 100, after: $cursor, orderBy: {field: STARRED_AT, direction: DESC}) {
@@ -83,7 +178,7 @@ async function run(): Promise<void> {
         cursor
       };
 
-      const response: GraphQLResponse = await octokit.graphql(query, variables);
+      const response = await graphqlWithAuth(query, variables) as GraphQLResponse;
       const starredRepos = response.user.starredRepositories;
 
       if (!totalCount) {
@@ -112,7 +207,7 @@ async function run(): Promise<void> {
         }
 
         // 处理topics
-        const topics: string[] = repo.repositoryTopics ? 
+        const topics = repo.repositoryTopics ? 
           repo.repositoryTopics.nodes.map(node => node.topic.name) : [];
 
         processedRepos.push({
@@ -122,7 +217,7 @@ async function run(): Promise<void> {
           html_url: repo.url,
           description: repo.description,
           language: repo.primaryLanguage ? repo.primaryLanguage.name : null,
-          languages: languages, // 添加languages字段
+          languages: languages,
           stargazers_count: repo.stargazerCount,
           forks_count: repo.forkCount,
           updated_at: repo.updatedAt,
@@ -147,7 +242,7 @@ async function run(): Promise<void> {
     console.log(`All repositories processed: ${processedRepos.length}`);
 
     // 确保输出目录存在
-    const outputDir: string = path.dirname(outputFile);
+    const outputDir = path.dirname(outputFile);
     if (!fs.existsSync(outputDir)) {
       fs.mkdirSync(outputDir, { recursive: true });
     }
@@ -157,10 +252,10 @@ async function run(): Promise<void> {
     console.log(`Full data saved to ${outputFile}`);
 
     // 检查是否在生产环境中（通过环境变量判断）
-    const isProduction: boolean = process.env.NODE_ENV === 'production' || process.env.GITHUB_ACTIONS === 'true';
+    const isProduction = process.env.NODE_ENV === 'production' || process.env.GITHUB_ACTIONS === 'true';
     
     // 生成简化版本（包含languages字段）
-    const simplifiedRepos = processedRepos.map(repo => ({
+    const simplifiedRepos: SimplifiedRepository[] = processedRepos.map(repo => ({
       id: repo.id,
       name: repo.name,
       full_name: repo.full_name,
@@ -180,7 +275,7 @@ async function run(): Promise<void> {
     }));
 
     // 确保简化版输出目录存在
-    const simpleOutputDir: string = path.dirname(simpleOutputFile);
+    const simpleOutputDir = path.dirname(simpleOutputFile);
     if (!fs.existsSync(simpleOutputDir)) {
       fs.mkdirSync(simpleOutputDir, { recursive: true });
     }
@@ -199,11 +294,7 @@ async function run(): Promise<void> {
     core.setOutput('simple-output-file', simpleOutputFile);
 
   } catch (error) {
-    if (error instanceof Error) {
-      core.setFailed(`Error fetching starred repositories: ${error.message}`);
-    } else {
-      core.setFailed(`Error fetching starred repositories: Unknown error occurred`);
-    }
+    core.setFailed(`Error fetching starred repositories: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 }
 

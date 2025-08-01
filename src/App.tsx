@@ -1,37 +1,36 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import MiniSearch from 'minisearch';
-import { Repository, LanguageStatsResult, SortBy, SortOrder } from './types/github';
+import { Repository, LanguageStat, LanguageStats } from './types';
 import './App.css';
 
 function App() {
   const [repos, setRepos] = useState<Repository[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   
   // 搜索状态
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedLanguage, setSelectedLanguage] = useState('');
-  const [selectedTag, setSelectedTag] = useState('');
-  const [sortBy, setSortBy] = useState<SortBy>('created');
+  const [searchTerm, setSearchTerm] = useState<string>('');
+  const [selectedLanguage, setSelectedLanguage] = useState<string>('');
+  const [selectedTag, setSelectedTag] = useState<string>('');
+  const [sortBy, setSortBy] = useState<string>('created');
   
   // MiniSearch 实例
-  const [searchIndex, setSearchIndex] = useState<MiniSearch<Repository> | null>(null);
+  const [searchIndex, setSearchIndex] = useState<MiniSearch | null>(null);
   
   // 无限滚动状态
-  const [displayedCount, setDisplayedCount] = useState(10);
-  const [loadingMore, setLoadingMore] = useState(false);
+  const [displayedCount, setDisplayedCount] = useState<number>(10);
+  const [loadingMore, setLoadingMore] = useState<boolean>(false);
   const itemsPerLoad = 10;
   
   // 设置状态
-  const [showSettings, setShowSettings] = useState(false);
+  const [showSettings, setShowSettings] = useState<boolean>(false);
   
   // 排序方向状态
-  const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
-  
+  const [sortOrder, setSortOrder] = useState<string>('desc');
   // 在生产环境中使用完整版本，开发环境中使用简化版本
   const defaultDataUrl = import.meta.env.PROD ? './data/starred-repos.json' : './data/starred-repos-simple.json';
-  const [dataUrl, setDataUrl] = useState(defaultDataUrl);
-  const [tempDataUrl, setTempDataUrl] = useState(defaultDataUrl);
+  const [dataUrl, setDataUrl] = useState<string>(defaultDataUrl);
+  const [tempDataUrl, setTempDataUrl] = useState<string>(defaultDataUrl);
 
   // 加载数据
   const fetchData = async (url: string) => {
@@ -45,7 +44,7 @@ function App() {
       const data = await response.json();
       setRepos(data);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unknown error occurred');
+      setError(err instanceof Error ? err.message : 'An unknown error occurred');
     } finally {
       setLoading(false);
     }
@@ -91,7 +90,7 @@ function App() {
   }, [repos]);
 
   // 计算语言比例
-  const languageStats: LanguageStatsResult = useMemo(() => {
+  const languageStats = useMemo((): LanguageStats => {
     const langCount: Record<string, number> = {};
     let totalWithLanguage = 0;
     
@@ -102,7 +101,7 @@ function App() {
       }
     });
     
-    const stats = Object.entries(langCount)
+    const stats: LanguageStat[] = Object.entries(langCount)
       .map(([language, count]) => ({
         language,
         count,
@@ -333,7 +332,7 @@ function App() {
             
             <select
               value={sortBy}
-              onChange={(e) => setSortBy(e.target.value as SortBy)}
+              onChange={(e) => setSortBy(e.target.value)}
               className="filter-select"
             >
               <option value="stars">Sort by Stars</option>
@@ -346,7 +345,7 @@ function App() {
             
             <select
               value={sortOrder}
-              onChange={(e) => setSortOrder(e.target.value as SortOrder)}
+              onChange={(e) => setSortOrder(e.target.value)}
               className="filter-select"
             >
               <option value="desc">Descending</option>
