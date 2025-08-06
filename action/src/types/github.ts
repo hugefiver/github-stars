@@ -54,13 +54,6 @@ export interface ProcessedRepository {
     createdAt: string;
     url: string;
   } | null;
-  milestones: {
-    title: string;
-    description: string | null;
-    state: string;
-    dueOn: string | null;
-    url: string;
-  }[];
   mirrorUrl: string | null;
   packages: {
     totalCount: number;
@@ -90,13 +83,6 @@ export interface ProcessedRepository {
           nameWithOwner: string;
           url: string;
         } | null;
-      } | null;
-      files: {
-        nodes: {
-          name: string;
-          size: number;
-          url: string;
-        }[];
       } | null;
     } | null;
   }[];

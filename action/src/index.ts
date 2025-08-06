@@ -215,15 +215,6 @@ async function run() {
                     createdAt
                     url
                   }
-                  milestones(first: 10) {
-                    nodes {
-                      title
-                      description
-                      state
-                      dueOn
-                      url
-                    }
-                  }
                   mirrorUrl
                   packages(first: 10) {
                     totalCount
@@ -252,13 +243,6 @@ async function run() {
                           repository {
                             name
                             nameWithOwner
-                            url
-                          }
-                        }
-                        files(first: 10) {
-                          nodes {
-                            name
-                            size
                             url
                           }
                         }
@@ -360,15 +344,6 @@ async function run() {
             createdAt: repo.latestRelease.createdAt,
             url: repo.latestRelease.url
           } : null,
-          milestones: (repo.milestones?.nodes ?? [])
-            .filter((m): m is NonNullable<typeof m> => m !== null)
-            .map(m => ({
-              title: m.title,
-              description: m.description ?? null,
-              state: m.state,
-              dueOn: m.dueOn ?? null,
-              url: m.url
-            })) || [],
           mirrorUrl: repo.mirrorUrl ?? null,
           packages: (repo.packages?.nodes ?? [])
             .filter((p): p is NonNullable<typeof p> => p !== null)
@@ -400,13 +375,6 @@ async function run() {
                     nameWithOwner: p.version.package.repository.nameWithOwner,
                     url: p.version.package.repository.url
                   } : null
-                } : null,
-                files: p.version.files ? {
-                  nodes: p.version.files.nodes?.filter((f): f is NonNullable<typeof f> => f !== null).map(f => ({
-                    name: f.name,
-                    size: f.size ?? 0,
-                    url: String(f.url)
-                  })) || []
                 } : null
               } : null
             })) || [],
