@@ -257,3 +257,22 @@ const miniSearch = new MiniSearch({
 - **数据同步**: GitHub Actions自动同步
 - **性能监控**: 监控关键性能指标
 - **错误追踪**: 实现错误追踪和报告
+
+## Git Configuration
+
+当调用 git 命令时，必须使用 `git --no-pager` 选项以避免分页器干扰。
+
+### 支持的 Git 命令
+
+以下 git 命令必须使用 `--no-pager` 选项：
+
+```bash
+git --no-pager log
+git --no-pager status
+git --no-pager diff
+git --no-pager show
+git --no-pager blame
+git --no-pager branch
+git --no-pager tag
+git --no-pager stash
+git --no-pager reflog
