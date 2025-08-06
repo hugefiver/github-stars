@@ -59,10 +59,18 @@ export interface Milestone {
   url: string;
 }
 
+export interface MilestoneConnection {
+  nodes: Milestone[];
+}
+
 export interface Package {
   name: string;
   packageType: string;
   version: string | null;
+}
+
+export interface PackageConnection {
+  nodes: Package[];
 }
 
 export interface ParentRepository {
@@ -92,9 +100,9 @@ export interface GraphQLRepository {
   parent: ParentRepository | null;
   isMirror: boolean;
   latestRelease: Release | null;
-  milestones: Milestone[];
+  milestones: MilestoneConnection;
   mirrorUrl: string | null;
-  packages: Package[];
+  packages: PackageConnection;
   pushedAt: string;
 }
 

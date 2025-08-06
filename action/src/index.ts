@@ -305,17 +305,21 @@ async function run() {
                     url
                   }
                   milestones(first: 10) {
-                    title
-                    description
-                    state
-                    dueOn
-                    url
+                    nodes {
+                      title
+                      description
+                      state
+                      dueOn
+                      url
+                    }
                   }
                   mirrorUrl
                   packages(first: 10) {
-                    name
-                    packageType
-                    version
+                    nodes {
+                      name
+                      packageType
+                      version
+                    }
                   }
                   pushedAt
                 }
@@ -391,9 +395,9 @@ async function run() {
           parent: repo.parent,
           isMirror: repo.isMirror,
           latestRelease: repo.latestRelease,
-          milestones: repo.milestones || [],
+          milestones: repo.milestones?.nodes || [],
           mirrorUrl: repo.mirrorUrl,
-          packages: repo.packages || [],
+          packages: repo.packages?.nodes || [],
           pushedAt: repo.pushedAt
         });
       }
