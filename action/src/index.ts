@@ -114,7 +114,7 @@ const handleRateLimit = async (graphqlWithAuth: any, fn: () => Promise<any>, max
       } catch (rateLimitError) {
         // If we can't get rate limit info, fall back to exponential backoff
         console.log('Could not fetch rate limit info, using fallback delay');
-        const fallbackDelay = 5000 * Math.pow(2, retryCount - 1); // 5s, 10s, 20s, 40s, 80s
+        const fallbackDelay = 30000 * Math.pow(2, retryCount - 1); // 30s, 60s, 120s, 240s, 480s
         console.log(`Waiting ${fallbackDelay}ms before retry...`);
         await delay(fallbackDelay);
       }
