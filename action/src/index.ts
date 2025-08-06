@@ -86,7 +86,9 @@ const handleRateLimit = async (graphqlWithAuth: any, fn: () => Promise<any>, max
       // Check if it's a rate limit error
       const isRateLimitError = error.message?.includes('rate limit') ||
         error.message?.includes('secondary rate limit') ||
-        error.message?.includes('API rate limit exceeded');
+        error.message?.includes('API rate limit exceeded') ||
+        (error.status === 403 && error.message?.includes('API rate limit exceeded')) ||
+        (error.status === 200 && error.message?.includes('secondary rate limit'));
 
       if (!isRateLimitError || retryCount >= maxRetries) {
         throw error;
@@ -94,32 +96,61 @@ const handleRateLimit = async (graphqlWithAuth: any, fn: () => Promise<any>, max
 
       console.log(`Rate limit hit (attempt ${retryCount}/${maxRetries})`);
 
-      try {
-        // Get current rate limit status
-        const rateLimitInfo = await getRateLimitStatus(graphqlWithAuth);
-        const resetAt = new Date(rateLimitInfo.rateLimit.resetAt);
-        const now = new Date();
-        const waitTimeMs = resetAt.getTime() - now.getTime();
+      // Check for response headers
+      const headers = error.headers || {};
+      const retryAfter = headers['retry-after'];
+      const ratelimitRemaining = headers['x-ratelimit-remaining'];
+      const ratelimitReset = headers['x-ratelimit-reset'];
 
-        if (waitTimeMs > 0) {
-          const waitTimeSeconds = Math.ceil(waitTimeMs / 1000);
-          console.log(`Rate limit will reset at ${resetAt.toISOString()}`);
-          console.log(`Waiting ${waitTimeSeconds} seconds for rate limit to reset...`);
-          await delay(waitTimeMs);
-        } else {
-          // If reset time is in the past, wait a minimum time
-          console.log('Rate limit should be reset, waiting 5 seconds to be safe...');
-          await delay(5000);
+      let waitTimeMs = 0;
+
+      if (retryAfter) {
+        // If retry-after header is present, wait for that many seconds
+        waitTimeMs = parseInt(retryAfter) * 1000;
+        console.log(`Retry-after header present: ${retryAfter} seconds`);
+      } else if (ratelimitRemaining === '0' && ratelimitReset) {
+        // If x-ratelimit-remaining is 0, wait until x-ratelimit-reset time
+        const resetTime = parseInt(ratelimitReset) * 1000; // Convert to milliseconds
+        const now = Date.now();
+        waitTimeMs = Math.max(0, resetTime - now);
+        console.log(`Rate limit remaining is 0, reset at ${new Date(resetTime).toISOString()}`);
+      } else {
+        // Otherwise, check GraphQL rate limit status
+        try {
+          const rateLimitInfo = await getRateLimitStatus(graphqlWithAuth);
+          const resetAt = new Date(rateLimitInfo.rateLimit.resetAt);
+          const now = new Date();
+          waitTimeMs = Math.max(0, resetAt.getTime() - now.getTime());
+          
+          if (waitTimeMs > 0) {
+            console.log(`GraphQL rate limit will reset at ${resetAt.toISOString()}`);
+          }
+        } catch (rateLimitError) {
+          // If we can't get rate limit info, use exponential backoff
+          console.log('Could not fetch rate limit info, using exponential backoff');
+          waitTimeMs = 60000 * Math.pow(2, retryCount - 1); // 60s, 120s, 240s, 480s, 960s
         }
-      } catch (rateLimitError) {
-        // If we can't get rate limit info, fall back to exponential backoff
-        console.log('Could not fetch rate limit info, using fallback delay');
-        const fallbackDelay = 30000 * Math.pow(2, retryCount - 1); // 30s, 60s, 120s, 240s, 480s
-        console.log(`Waiting ${fallbackDelay}ms before retry...`);
-        await delay(fallbackDelay);
       }
+
+      // Ensure minimum wait time of 1 minute if no specific wait time was determined
+      if (waitTimeMs <= 0) {
+        waitTimeMs = 60000; // 1 minute
+        console.log('No specific wait time determined, using minimum 1 minute wait');
+      }
+
+      // Apply exponential backoff for secondary rate limits
+      if (error.message?.includes('secondary rate limit')) {
+        waitTimeMs = Math.max(waitTimeMs, 60000 * Math.pow(2, retryCount - 1));
+        console.log(`Secondary rate limit detected, applying exponential backoff: ${waitTimeMs}ms`);
+      }
+
+      const waitTimeSeconds = Math.ceil(waitTimeMs / 1000);
+      console.log(`Waiting ${waitTimeSeconds} seconds before retry...`);
+      await delay(waitTimeMs);
     }
   }
+
+  throw new Error(`Maximum retries (${maxRetries}) exceeded due to rate limiting`);
 };
 
 async function run() {
