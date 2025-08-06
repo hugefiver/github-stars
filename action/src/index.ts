@@ -11,7 +11,7 @@ interface SimplifiedRepository {
   html_url: string;
   description: string | null;
   language: string | null;
-  languages: Record<string, { bytes: number; percentage: string }>;
+  languages: Record<string, { bytes: number; percentage: string; color?: string }>;
   stargazers_count: number;
   forks_count: number;
   updated_at: string;
@@ -63,7 +63,7 @@ async function getRateLimitStatus(graphqlWithAuth: any): Promise<RateLimitRespon
       }
     }
   `;
-  
+
   try {
     const response = await graphqlWithAuth(rateLimitQuery) as RateLimitResponse;
     return response;
@@ -76,31 +76,31 @@ async function getRateLimitStatus(graphqlWithAuth: any): Promise<RateLimitRespon
 // Function to handle rate limit with intelligent waiting
 const handleRateLimit = async (graphqlWithAuth: any, fn: () => Promise<any>, maxRetries = 5) => {
   let retryCount = 0;
-  
+
   while (retryCount < maxRetries) {
     try {
       return await fn();
     } catch (error: any) {
       retryCount++;
-      
+
       // Check if it's a rate limit error
-      const isRateLimitError = error.message?.includes('rate limit') || 
-                              error.message?.includes('secondary rate limit') ||
-                              error.message?.includes('API rate limit exceeded');
-      
+      const isRateLimitError = error.message?.includes('rate limit') ||
+        error.message?.includes('secondary rate limit') ||
+        error.message?.includes('API rate limit exceeded');
+
       if (!isRateLimitError || retryCount >= maxRetries) {
         throw error;
       }
-      
+
       console.log(`Rate limit hit (attempt ${retryCount}/${maxRetries})`);
-      
+
       try {
         // Get current rate limit status
         const rateLimitInfo = await getRateLimitStatus(graphqlWithAuth);
         const resetAt = new Date(rateLimitInfo.rateLimit.resetAt);
         const now = new Date();
         const waitTimeMs = resetAt.getTime() - now.getTime();
-        
+
         if (waitTimeMs > 0) {
           const waitTimeSeconds = Math.ceil(waitTimeMs / 1000);
           console.log(`Rate limit will reset at ${resetAt.toISOString()}`);
@@ -170,6 +170,7 @@ async function run() {
                     edges {
                       node {
                         name
+                        color
                       }
                       size
                     }
@@ -282,9 +283,9 @@ async function run() {
         }
         const repo = edge.node;
         const starredAt = edge.starredAt;
-        
+
         // 处理语言数据
-        const languages: Record<string, { bytes: number; percentage: string }> = {};
+        const languages: Record<string, { bytes: number; percentage: string; color?: string }> = {};
         if (repo.languages?.edges && repo.languages.totalSize && repo.languages.totalSize > 0) {
           const totalSize = repo.languages.totalSize;
           const langEdges = repo.languages.edges;
@@ -298,14 +299,15 @@ async function run() {
               const size = langEdge.size;
               languages[languageName] = {
                 bytes: size,
-                percentage: ((size / totalSize) * 100).toFixed(2)
+                percentage: ((size / totalSize) * 100).toFixed(2),
+                color: langEdge.node.color ?? undefined
               };
             }
           }
         }
 
         // 处理topics
-        const topics = (repo.repositoryTopics ? 
+        const topics = (repo.repositoryTopics ?
           repo.repositoryTopics.nodes?.flatMap(n => n?.topic?.name).filter((name): name is string => name !== undefined) : []) ?? [];
 
         processedRepos.push({
@@ -388,7 +390,7 @@ async function run() {
       hasNextPage = starredRepos.pageInfo.hasNextPage;
       cursor = starredRepos.pageInfo.endCursor ?? null;
     }
-    
+
     console.log(`All repositories processed: ${processedRepos.length}`);
 
     // 确保输出目录存在
@@ -403,7 +405,7 @@ async function run() {
 
     // 检查是否在生产环境中（通过环境变量判断）
     const isProduction = process.env.NODE_ENV === 'production' || process.env.GITHUB_ACTIONS === 'true';
-    
+
     // 生成简化版本（包含languages字段）
     const simplifiedRepos: SimplifiedRepository[] = processedRepos.map(repo => ({
       id: repo.id,
@@ -439,7 +441,7 @@ async function run() {
     // 保存简化数据到文件
     fs.writeFileSync(simpleOutputFile, JSON.stringify(simplifiedRepos, null, 2));
     console.log(`Simplified data saved to ${simpleOutputFile}`);
-    
+
     if (isProduction) {
       console.log('Production environment detected, but simplified data generation is enabled');
     }
