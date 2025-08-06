@@ -4,8 +4,8 @@
   "ai_generated": true,
   "created_by": "Cline",
   "created_at": "2025-08-01",
-  "updated_at": "2025-08-02",
-  "version": "1.0.0",
+  "updated_at": "2025-08-06",
+  "version": "1.1.0",
   "cline": {
     "prompts": {
       "development": {
@@ -22,10 +22,36 @@
           "可重用的GitHub Action"
         ],
         "tech_stack": {
-          "frontend": "React 18, Vite, TypeScript, CSS3, MiniSearch",
-          "backend": "GitHub Actions, Node.js 24, Octokit, GraphQL",
-          "deployment": "GitHub Pages",
-          "package_manager": "pnpm"
+          "frontend": {
+            "framework": "React 18",
+            "build_tool": "Vite",
+            "language": "TypeScript",
+            "styling": "CSS3, SCSS",
+            "state_management": "Jotai",
+            "search": "MiniSearch",
+            "http_client": "fetch API",
+            "testing": "Vitest, React Testing Library"
+          },
+          "backend": {
+            "platform": "GitHub Actions",
+            "runtime": "Node.js 24",
+            "libraries": ["Octokit", "GraphQL"],
+            "packaging": "@vercel/ncc",
+            "testing": "Custom test scripts"
+          },
+          "deployment": {
+            "platform": "GitHub Pages",
+            "build_output": "docs directory",
+            "branch": "gh-pages",
+            "cdn": "GitHub CDN"
+          },
+          "package_manager": "pnpm",
+          "development_tools": {
+            "code_generation": "GraphQL Code Generator",
+            "linting": "ESLint",
+            "formatting": "Prettier",
+            "type_checking": "TypeScript Compiler"
+          }
         },
         "development_commands": {
           "install": "pnpm install",
@@ -34,8 +60,14 @@
           "build": "pnpm run build",
           "build:action": "cd action && pnpm run build",
           "preview": "pnpm run preview",
+          "type-check": "pnpm run type-check",
+          "lint": "pnpm run lint",
+          "format": "pnpm run format",
+          "test": "pnpm run test",
+          "test:coverage": "pnpm run test:coverage",
           "test:graphql": "node scripts/test-graphql-query.cjs",
-          "simulate:action": "node scripts/simulate-action.cjs"
+          "simulate:action": "node scripts/simulate-action.cjs",
+          "codegen": "pnpm run codegen"
         },
         "project_structure": {
           "src/": "前端React源代码",
@@ -90,8 +122,27 @@
       "user_experience": "提供设置浮窗让用户自定义数据源，支持无限滚动加载更多内容。响应式设计适配移动端和桌面端。",
       "ai_policy": "项目完全由AI生成，所有代码、文档和配置文件必须由AI生成。遵循项目的AI生成内容政策，使用指定的技术栈。",
       "key_dependencies": {
-        "frontend": ["react", "react-dom", "vite", "typescript", "minisearch", "@octokit/rest", "dotenv"],
-        "action": ["@actions/core", "@actions/github", "@octokit/graphql", "@octokit/rest", "@vercel/ncc", "typescript"]
+        "frontend": {
+          "core": ["react", "react-dom"],
+          "build_tools": ["vite", "typescript"],
+          "state_management": ["jotai"],
+          "search": ["minisearch"],
+          "utilities": ["dotenv"],
+          "api": ["@octokit/rest"],
+          "testing": ["vitest", "@testing-library/react"]
+        },
+        "action": {
+          "github_actions": ["@actions/core", "@actions/github"],
+          "api": ["@octokit/graphql", "@octokit/rest"],
+          "build_tools": ["@vercel/ncc", "typescript"],
+          "testing": ["@types/node"]
+        },
+        "development": {
+          "code_quality": ["eslint", "prettier"],
+          "code_generation": ["@graphql-codegen/cli", "@graphql-codegen/typescript"],
+          "styling": ["sass"],
+          "testing": ["@testing-library/jest-dom", "msw"]
+        }
       },
       "build_targets": {
         "frontend": "构建到docs目录，用于GitHub Pages部署",
@@ -103,6 +154,50 @@
       "code_review": "所有PR必须经过审查，确保代码完全由AI生成且符合项目标准",
       "testing": "使用scripts目录下的测试脚本验证GraphQL查询和Action功能",
       "deployment": "自动部署到GitHub Pages，支持手动触发部署"
+    },
+    "ai_assistant": {
+      "coding_patterns": {
+        "react_components": "使用函数组件和React Hooks，保持组件单一职责，使用TypeScript类型定义，确保响应式设计。使用React.memo优化性能，实现懒加载和虚拟滚动。",
+        "state_management": "使用Jotai进行状态管理，区分记忆性和非记忆性状态。搜索和过滤状态使用useState（不记忆），用户设置使用useAtom（记忆）。",
+        "data_fetching": "使用fetch API和GraphQL进行数据获取，实现错误处理和加载状态管理。支持完整数据格式和简化数据格式。",
+        "search_implementation": "使用MiniSearch实现高性能全文搜索，支持模糊匹配、前缀搜索和字段权重配置。搜索字段包括仓库名、描述、语言和主题标签。",
+        "styling_approach": "使用CSS3和SCSS，响应式设计，CSS变量管理主题色彩。确保在移动端和桌面端都有良好的用户体验。"
+      },
+      "code_generation": {
+        "preferred_patterns": ["函数组件", "TypeScript接口", "自定义Hooks", "Jotai状态管理", "MiniSearch搜索"],
+        "avoid_patterns": ["类组件", "any类型", "直接DOM操作", "过度嵌套组件", "过时的React API"],
+        "component_structure": "单一职责，可复用性，清晰的props类型定义，适当的错误边界处理",
+        "performance_considerations": "使用React.memo优化，实现懒加载，虚拟滚动，避免不必要的重新渲染"
+      },
+      "testing_strategy": {
+        "unit_testing": "使用React Testing Library测试组件，测试用户交互和状态管理",
+        "integration_testing": "测试数据流和API调用，验证搜索和过滤功能",
+        "e2e_testing": "使用Playwright进行端到端测试，验证完整用户流程",
+        "testing_utilities": ["React Testing Library", "Vitest", "Playwright", "MSW for API mocking"]
+      },
+      "documentation_standards": {
+        "code_comments": "为复杂逻辑添加注释，解释算法和业务逻辑",
+        "type_definitions": "定义清晰的TypeScript接口，包含详细的属性说明",
+        "readme_updates": "及时更新README文档，包含安装、使用、开发指南",
+        "api_documentation": "为GraphQL查询和API调用提供详细文档"
+      },
+      "quality_assurance": {
+        "code_review_checklist": [
+          "TypeScript类型安全",
+          "React最佳实践",
+          "性能优化",
+          "错误处理",
+          "响应式设计",
+          "可访问性"
+        ],
+        "performance_metrics": [
+          "搜索响应时间",
+          "组件渲染性能",
+          "API调用效率",
+          "内存使用优化"
+        ],
+        "accessibility_guidelines": "遵循WCAG 2.1标准，确保键盘导航和屏幕阅读器支持"
+      }
     }
   }
 }

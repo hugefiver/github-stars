@@ -2,7 +2,41 @@ import * as core from '@actions/core';
 import { graphql } from "@octokit/graphql";
 import * as fs from "fs";
 import * as path from "path";
-import { GraphQLRepository } from "./types/github";
+import { ProcessedRepository, GraphQLResponse } from "./types/github";
+
+interface SimplifiedRepository {
+  id: number;
+  name: string;
+  full_name: string;
+  html_url: string;
+  description: string | null;
+  language: string | null;
+  languages: Record<string, { bytes: number; percentage: string }>;
+  stargazers_count: number;
+  forks_count: number;
+  updated_at: string;
+  created_at: string;
+  starred_at: string;
+  owner_login: string;
+  owner_avatar_url: string;
+  owner_html_url: string;
+  topics: string[];
+  licenseInfo: {
+    key: string;
+    name: string;
+    spdxId: string;
+    url: string | null;
+  } | null;
+  isArchived: boolean;
+  isFork: boolean;
+  isMirror: boolean;
+  parent: {
+    name: string;
+    nameWithOwner: string;
+    url: string;
+  } | null;
+  pushedAt: string | null;
+}
 
 // Utility function for delay
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
@@ -87,129 +121,6 @@ const handleRateLimit = async (graphqlWithAuth: any, fn: () => Promise<any>, max
     }
   }
 };
-
-interface StarredRepositoryEdge {
-  node: GraphQLRepository;
-  starredAt: string;
-}
-
-interface GraphQLResponse {
-  user: {
-    starredRepositories: {
-      totalCount: number;
-      pageInfo: {
-        hasNextPage: boolean;
-        endCursor: string | null;
-      };
-      edges: StarredRepositoryEdge[];
-    };
-  };
-}
-
-interface ProcessedRepository {
-  id: number;
-  name: string;
-  full_name: string;
-  html_url: string;
-  description: string | null;
-  language: string | null;
-  languages: Record<string, { bytes: number; percentage: string }>;
-  stargazers_count: number;
-  forks_count: number;
-  updated_at: string;
-  created_at: string;
-  starred_at: string;
-  owner: {
-    login: string;
-    avatar_url: string;
-    html_url: string;
-  };
-  topics: string[];
-  licenseInfo: {
-    key: string;
-    name: string;
-    spdxId: string;
-    url: string | null;
-  } | null;
-  fundingLinks: {
-    platform: string;
-    url: string;
-  }[];
-  isArchived: boolean;
-  isFork: boolean;
-  parent: {
-    name: string;
-    nameWithOwner: string;
-    url: string;
-  } | null;
-  isMirror: boolean;
-  latestRelease: {
-    name: string;
-    tagName: string;
-    createdAt: string;
-    url: string;
-  } | null;
-  milestones: {
-    title: string;
-    description: string | null;
-    state: string;
-    dueOn: string | null;
-    url: string;
-  }[];
-  mirrorUrl: string | null;
-  packages: {
-    name: string;
-    packageType: string;
-    version: string | null;
-  }[];
-  pushedAt: string;
-}
-
-interface SimplifiedRepository {
-  id: number;
-  name: string;
-  full_name: string;
-  html_url: string;
-  description: string | null;
-  language: string | null;
-  languages: Record<string, { bytes: number; percentage: string }>;
-  stargazers_count: number;
-  forks_count: number;
-  updated_at: string;
-  created_at: string;
-  starred_at: string;
-  owner_login: string;
-  owner_avatar_url: string;
-  owner_html_url: string;
-  topics: string[];
-  /**
-   * Information about the repository's license.
-   * 
-   * This object contains details about the license detected for the repository.
-   * If no license is detected, this field will be null.
-   * 
-   * Structure:
-   *   - key: The license key (e.g., "mit", "apache-2.0").
-   *   - name: The full name of the license (e.g., "MIT License").
-   *   - spdxId: The SPDX identifier for the license (e.g., "MIT", "Apache-2.0").
-   *   - url: A URL to the license text or documentation, or null if unavailable.
-   */
-  licenseInfo: {
-    key: string;
-    name: string;
-    spdxId: string;
-    url: string | null;
-  } | null;
-  isArchived: boolean;
-  isFork: boolean;
-  isMirror: boolean;
-  parent: {
-    name: string;
-    nameWithOwner: string;
-    url: string;
-  } | null;
-  pushedAt: string;
-}
 
 async function run() {
   try {
@@ -347,34 +258,45 @@ async function run() {
 
       const edges = starredRepos.edges;
 
-      for (const edge of edges) {
+      for (const edge of edges ?? []) {
+        if (!edge) {
+          console.warn('Skipping empty edge');
+          continue;
+        }
         const repo = edge.node;
         const starredAt = edge.starredAt;
         
         // 处理语言数据
         const languages: Record<string, { bytes: number; percentage: string }> = {};
-        if (repo.languages && repo.languages.edges && repo.languages.totalSize > 0) {
+        if (repo.languages?.edges && repo.languages.totalSize && repo.languages.totalSize > 0) {
           const totalSize = repo.languages.totalSize;
-          for (const langEdge of repo.languages.edges) {
-            const languageName = langEdge.node.name;
-            const size = langEdge.size;
-            languages[languageName] = {
-              bytes: size,
-              percentage: ((size / totalSize) * 100).toFixed(2)
-            };
+          const langEdges = repo.languages.edges;
+          if (langEdges) {
+            for (const langEdge of langEdges) {
+              if (!langEdge || !langEdge.node) {
+                console.warn('Skipping empty language edge');
+                continue;
+              }
+              const languageName = langEdge.node.name;
+              const size = langEdge.size;
+              languages[languageName] = {
+                bytes: size,
+                percentage: ((size / totalSize) * 100).toFixed(2)
+              };
+            }
           }
         }
 
         // 处理topics
-        const topics = repo.repositoryTopics ? 
-          repo.repositoryTopics.nodes.flatMap(n => n?.node?.topic?.name) : [];
+        const topics = (repo.repositoryTopics ? 
+          repo.repositoryTopics.nodes?.flatMap(n => n?.topic?.name).filter((name): name is string => name !== undefined) : []) ?? [];
 
         processedRepos.push({
           id: index++,
           name: repo.name,
           full_name: repo.nameWithOwner,
           html_url: repo.url,
-          description: repo.description,
+          description: repo.description ?? null,
           language: repo.primaryLanguage ? repo.primaryLanguage.name : null,
           languages: languages,
           stargazers_count: repo.stargazerCount,
@@ -388,25 +310,49 @@ async function run() {
             html_url: repo.owner.url
           },
           topics: topics,
-          licenseInfo: repo.licenseInfo,
+          licenseInfo: repo.licenseInfo ? {
+            key: repo.licenseInfo.key,
+            name: repo.licenseInfo.name,
+            spdxId: repo.licenseInfo.spdxId ?? '',
+            url: repo.licenseInfo.url ?? null
+          } : null,
           fundingLinks: repo.fundingLinks || [],
           isArchived: repo.isArchived,
           isFork: repo.isFork,
-          parent: repo.parent,
+          parent: repo.parent ?? null,
           isMirror: repo.isMirror,
-          latestRelease: repo.latestRelease,
-          milestones: repo.milestones?.nodes || [],
-          mirrorUrl: repo.mirrorUrl,
-          packages: repo.packages?.nodes || [],
-          pushedAt: repo.pushedAt
+          latestRelease: repo.latestRelease ? {
+            name: repo.latestRelease.name ?? '',
+            tagName: repo.latestRelease.tagName,
+            createdAt: repo.latestRelease.createdAt,
+            url: repo.latestRelease.url
+          } : null,
+          milestones: (repo.milestones?.nodes ?? [])
+            .filter((m): m is NonNullable<typeof m> => m !== null)
+            .map(m => ({
+              title: m.title,
+              description: m.description ?? null,
+              state: m.state,
+              dueOn: m.dueOn ?? null,
+              url: m.url
+            })) || [],
+          mirrorUrl: repo.mirrorUrl ?? null,
+          packages: (repo.packages?.nodes ?? [])
+            .filter((p): p is NonNullable<typeof p> => p !== null)
+            .map(p => ({
+              name: p.name,
+              packageType: String(p.packageType),
+              version: p.version ? String(p.version) : null
+            })) || [],
+          pushedAt: repo.pushedAt ?? null
         });
       }
 
-      console.log(`Processed ${edges.length} repositories, total: ${processedRepos.length}/${totalCount}`);
+      console.log(`Processed ${edges?.length} repositories, total: ${processedRepos.length}/${totalCount}`);
 
       // 检查是否还有下一页
       hasNextPage = starredRepos.pageInfo.hasNextPage;
-      cursor = starredRepos.pageInfo.endCursor;
+      cursor = starredRepos.pageInfo.endCursor ?? null;
     }
     
     console.log(`All repositories processed: ${processedRepos.length}`);
@@ -447,7 +393,7 @@ async function run() {
       isFork: repo.isFork,
       isMirror: repo.isMirror,
       parent: repo.parent,
-      pushedAt: repo.pushedAt
+      pushedAt: repo.pushedAt ?? null
     }));
 
     // 确保简化版输出目录存在

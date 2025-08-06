@@ -6,7 +6,15 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "codegen": "graphql-codegen",
+    "type-check": "tsc --noEmit",
+    "lint": "eslint src --ext .ts,.tsx",
+    "format": "prettier --write src/**/*.{ts,tsx,scss,css}",
+    "test": "vitest",
+    "test:coverage": "vitest --coverage",
+    "test:graphql": "node scripts/test-graphql-query.cjs",
+    "simulate:action": "node scripts/simulate-action.cjs"
   },
   "dependencies": {
     "@octokit/rest": "^22.0.0",
@@ -17,6 +25,8 @@
     "react-dom": "^18.3.1"
   },
   "devDependencies": {
+    "@graphql-codegen/cli": "^5.0.7",
+    "@graphql-codegen/typescript": "^4.1.6",
     "@types/react": "^18.3.23",
     "@types/react-dom": "^18.3.7",
     "@vitejs/plugin-react": "^4.7.0",

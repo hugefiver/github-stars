@@ -307,7 +307,7 @@ for (const edge of edges) {
 
 ```bash
 # 安装依赖
-npm install dotenv
+pnpm install dotenv
 
 # 配置 GitHub token（在 .env 文件中）
 echo "GITHUB_TOKEN=your_token_here" > .env

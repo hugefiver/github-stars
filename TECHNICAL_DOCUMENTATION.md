@@ -64,7 +64,7 @@ GitHub Stars Search 是一个完全由 AI 生成的项目，用于自动获取�
 - **框架**: React 18
 - **语言**: TypeScript
 - **构建工具**: Vite
-- **包管理**: pnpm
+- **包管理**: pnpm (所有开发和构建流程都使用 pnpm)
 - **样式**: CSS3 (原生 CSS)
 
 #### 核心库

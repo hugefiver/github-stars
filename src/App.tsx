@@ -515,7 +515,7 @@ function App() {
                       </div>
                       <div className="repo-info-item">
                         <span className="repo-info-label">License:</span>
-                        <span className="repo-info-value">{repo.license?.name || repo.licenseInfo?.name || 'N/A'}</span>
+                        <span className="repo-info-value">{repo.licenseInfo?.name || 'N/A'}</span>
                       </div>
                       <div className="repo-info-item">
                         <span className="repo-info-label">Status:</span>
