@@ -143,12 +143,13 @@ async function run() {
     let cursor: string | null = null;
     let totalCount = 0;
     let index = 1;
+    let requestCount = 0; // 添加请求计数器
 
     while (hasNextPage) {
       const query = `
         query($username: String!, $cursor: String) {
           user(login: $username) {
-            starredRepositories(first: 50, after: $cursor, orderBy: {field: STARRED_AT, direction: ASC}) {
+            starredRepositories(first: 70, after: $cursor, orderBy: {field: STARRED_AT, direction: ASC}) {
               totalCount
               pageInfo {
                 hasNextPage
@@ -220,7 +221,7 @@ async function run() {
                     nodes {
                       name
                       packageType
-                      version(version: "latest") {
+                      latestVersion {
                         id
                         version
                         preRelease
@@ -235,15 +236,6 @@ async function run() {
                           tagName
                           createdAt
                           url
-                        }
-                        package {
-                          name
-                          packageType
-                          repository {
-                            name
-                            nameWithOwner
-                            url
-                          }
                         }
                       }
                     }
@@ -265,6 +257,13 @@ async function run() {
       const response = await handleRateLimit(graphqlWithAuth, async () => {
         return await graphqlWithAuth(query, variables) as GraphQLResponse;
       }) as GraphQLResponse;
+
+      // 每发送5个请求后延迟5秒
+      requestCount++;
+      if (requestCount % 5 === 0) {
+        console.log(`已发送 ${requestCount} 个请求，延迟 5 秒...`);
+        await delay(5000);
+      }
       const starredRepos = response.user.starredRepositories;
 
       if (!totalCount) {
@@ -351,30 +350,21 @@ async function run() {
               totalCount: repo.packages?.totalCount ?? 0,
               name: p.name,
               packageType: String(p.packageType),
-              version: p.version ? {
-                id: p.version.id,
-                version: p.version.version,
-                preRelease: p.version.preRelease,
-                platform: p.version.platform ?? null,
-                summary: p.version.summary ?? null,
-                readme: p.version.readme ?? null,
-                statistics: p.version.statistics ? {
-                  downloadsTotalCount: p.version.statistics.downloadsTotalCount
+              version: p.latestVersion ? {
+                id: p.latestVersion.id,
+                version: p.latestVersion.version,
+                preRelease: p.latestVersion.preRelease,
+                platform: p.latestVersion.platform ?? null,
+                summary: p.latestVersion.summary ?? null,
+                readme: p.latestVersion.readme ?? null,
+                statistics: p.latestVersion.statistics ? {
+                  downloadsTotalCount: p.latestVersion.statistics.downloadsTotalCount
                 } : null,
-                release: p.version.release ? {
-                  name: p.version.release.name ?? '',
-                  tagName: p.version.release.tagName,
-                  createdAt: p.version.release.createdAt,
-                  url: p.version.release.url
-                } : null,
-                package: p.version.package ? {
-                  name: p.version.package.name,
-                  packageType: p.version.package.packageType,
-                  repository: p.version.package.repository ? {
-                    name: p.version.package.repository.name,
-                    nameWithOwner: p.version.package.repository.nameWithOwner,
-                    url: p.version.package.repository.url
-                  } : null
+                release: p.latestVersion.release ? {
+                  name: p.latestVersion.release.name ?? '',
+                  tagName: p.latestVersion.release.tagName,
+                  createdAt: p.latestVersion.release.createdAt,
+                  url: p.latestVersion.release.url
                 } : null
               } : null
             })) || [],

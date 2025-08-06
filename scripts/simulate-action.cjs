@@ -101,17 +101,8 @@ async function simulateAction() {
                     createdAt
                     url
                   }
-                  milestones(first: 10) {
-                    nodes {
-                      title
-                      description
-                      state
-                      dueOn
-                      url
-                    }
-                  }
                   mirrorUrl
-                  packages(first: 10) {
+                  packages(first: 3) {
                     totalCount
                     nodes {
                       name
@@ -138,13 +129,6 @@ async function simulateAction() {
                           repository {
                             name
                             nameWithOwner
-                            url
-                          }
-                        }
-                        files(first: 10) {
-                          nodes {
-                            name
-                            size
                             url
                           }
                         }

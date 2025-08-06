@@ -75,15 +75,6 @@ export interface ProcessedRepository {
         createdAt: string;
         url: string;
       } | null;
-      package: {
-        name: string;
-        packageType: string;
-        repository: {
-          name: string;
-          nameWithOwner: string;
-          url: string;
-        } | null;
-      } | null;
     } | null;
   }[];
   pushedAt: string | null;
