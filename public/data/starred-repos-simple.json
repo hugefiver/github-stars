@@ -1,0 +1,125 @@
+[
+  {
+    "id": 1,
+    "name": "react",
+    "full_name": "facebook/react",
+    "html_url": "https://github.com/facebook/react",
+    "description": "The library for web and native user interfaces.",
+    "language": "JavaScript",
+    "languages": {
+      "JavaScript": {
+        "bytes": 1234567,
+        "percentage": "92.50"
+      },
+      "TypeScript": {
+        "bytes": 45678,
+        "percentage": "7.50"
+      }
+    },
+    "stargazers_count": 228000,
+    "forks_count": 46000,
+    "updated_at": "2024-08-06T10:00:00Z",
+    "created_at": "2013-05-24T16:15:54Z",
+    "starred_at": "2024-01-15T10:30:00Z",
+    "owner_login": "facebook",
+    "owner_avatar_url": "https://avatars.githubusercontent.com/u/69631?v=4",
+    "owner_html_url": "https://github.com/facebook",
+    "topics": ["react", "javascript", "library", "ui", "frontend"],
+    "licenseInfo": {
+      "key": "mit",
+      "name": "MIT License",
+      "spdxId": "MIT",
+      "url": "https://api.github.com/licenses/mit"
+    }
+  },
+  {
+    "id": 2,
+    "name": "vue",
+    "full_name": "vuejs/vue",
+    "html_url": "https://github.com/vuejs/vue",
+    "description": "This is the repo for Vue 2. For Vue 3, go to https://github.com/vuejs/core",
+    "language": "TypeScript",
+    "languages": {
+      "TypeScript": {
+        "bytes": 987654,
+        "percentage": "85.30"
+      },
+      "JavaScript": {
+        "bytes": 123456,
+        "percentage": "14.70"
+      }
+    },
+    "stargazers_count": 207000,
+    "forks_count": 33000,
+    "updated_at": "2024-08-05T15:30:00Z",
+    "created_at": "2013-07-29T03:24:51Z",
+    "starred_at": "2024-02-10T14:20:00Z",
+    "owner_login": "vuejs",
+    "owner_avatar_url": "https://avatars.githubusercontent.com/u/6128107?v=4",
+    "owner_html_url": "https://github.com/vuejs",
+    "topics": ["vue", "javascript", "framework", "frontend"],
+    "licenseInfo": {
+      "key": "mit",
+      "name": "MIT License",
+      "spdxId": "MIT",
+      "url": "https://api.github.com/licenses/mit"
+    }
+  },
+  {
+    "id": 3,
+    "name": "angular",
+    "full_name": "angular/angular",
+    "html_url": "https://github.com/angular/angular",
+    "description": "Deliver web apps with confidence 🚀",
+    "language": "TypeScript",
+    "languages": {
+      "TypeScript": {
+        "bytes": 2345678,
+        "percentage": "95.80"
+      },
+      "JavaScript": {
+        "bytes": 98765,
+        "percentage": "4.20"
+      }
+    },
+    "stargazers_count": 95000,
+    "forks_count": 25000,
+    "updated_at": "2024-08-06T09:15:00Z",
+    "created_at": "2014-09-18T16:12:01Z",
+    "starred_at": "2024-03-01T11:45:00Z",
+    "owner_login": "angular",
+    "owner_avatar_url": "https://avatars.githubusercontent.com/u/139426?v=4",
+    "owner_html_url": "https://github.com/angular",
+    "topics": ["angular", "typescript", "framework", "frontend"],
+    "licenseInfo": null
+  },
+  {
+    "id": 4,
+    "name": "express",
+    "full_name": "expressjs/express",
+    "html_url": "https://github.com/expressjs/express",
+    "description": "Fast, unopinionated, minimalist web framework for node.",
+    "language": "JavaScript",
+    "languages": {
+      "JavaScript": {
+        "bytes": 567890,
+        "percentage": "100.00"
+      }
+    },
+    "stargazers_count": 65000,
+    "forks_count": 15000,
+    "updated_at": "2024-08-04T18:20:00Z",
+    "created_at": "2009-06-26T18:56:01Z",
+    "starred_at": "2024-04-20T16:10:00Z",
+    "owner_login": "expressjs",
+    "owner_avatar_url": "https://avatars.githubusercontent.com/u/5658226?v=4",
+    "owner_html_url": "https://github.com/expressjs",
+    "topics": ["express", "javascript", "nodejs", "web", "framework"],
+    "licenseInfo": {
+      "key": "mit",
+      "name": "MIT License",
+      "spdxId": "MIT",
+      "url": "https://api.github.com/licenses/mit"
+    }
+  }
+]
