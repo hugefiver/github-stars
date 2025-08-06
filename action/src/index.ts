@@ -182,6 +182,18 @@ interface SimplifiedRepository {
   owner_avatar_url: string;
   owner_html_url: string;
   topics: string[];
+  /**
+   * Information about the repository's license.
+   * 
+   * This object contains details about the license detected for the repository.
+   * If no license is detected, this field will be null.
+   * 
+   * Structure:
+   *   - key: The license key (e.g., "mit", "apache-2.0").
+   *   - name: The full name of the license (e.g., "MIT License").
+   *   - spdxId: The SPDX identifier for the license (e.g., "MIT", "Apache-2.0").
+   *   - url: A URL to the license text or documentation, or null if unavailable.
+   */
   licenseInfo: {
     key: string;
     name: string;
