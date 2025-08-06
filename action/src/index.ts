@@ -51,15 +51,6 @@ interface RateLimitResponse {
   };
 }
 
-// Interface for rate limit headers
-interface RateLimitHeaders {
-  'x-ratelimit-limit': string;
-  'x-ratelimit-remaining': string;
-  'x-ratelimit-used': string;
-  'x-ratelimit-reset': string;
-  'x-ratelimit-resource'?: string;
-}
-
 // Function to get current rate limit status
 async function getRateLimitStatus(graphqlWithAuth: any): Promise<RateLimitResponse> {
   const rateLimitQuery = `
@@ -82,118 +73,7 @@ async function getRateLimitStatus(graphqlWithAuth: any): Promise<RateLimitRespon
   }
 }
 
-// Function to check and handle rate limit based on response headers
-const checkRateLimitFromHeaders = async (response: any, graphqlWithAuth: any) => {
-  // Extract rate limit headers from the response
-  const headers = response.headers || {};
-  const rateLimitHeaders: Partial<RateLimitHeaders> = {
-    'x-ratelimit-limit': headers['x-ratelimit-limit'],
-    'x-ratelimit-remaining': headers['x-ratelimit-remaining'],
-    'x-ratelimit-used': headers['x-ratelimit-used'],
-    'x-ratelimit-reset': headers['x-ratelimit-reset'],
-    'x-ratelimit-resource': headers['x-ratelimit-resource']
-  };
-
-  // Validate that we have the required headers
-  if (!rateLimitHeaders['x-ratelimit-limit'] || 
-      !rateLimitHeaders['x-ratelimit-remaining'] || 
-      !rateLimitHeaders['x-ratelimit-used'] || 
-      !rateLimitHeaders['x-ratelimit-reset']) {
-    console.log('Rate limit headers not found in response, skipping header-based rate limit check');
-    return;
-  }
-
-  const limit = parseInt(rateLimitHeaders['x-ratelimit-limit'], 10);
-  const remaining = parseInt(rateLimitHeaders['x-ratelimit-remaining'], 10);
-  const used = parseInt(rateLimitHeaders['x-ratelimit-used'], 10);
-  const resetTimestamp = parseInt(rateLimitHeaders['x-ratelimit-reset'], 10);
-  const resource = rateLimitHeaders['x-ratelimit-resource'];
-
-  console.log(`Rate Limit Status - Resource: ${resource || 'unknown'}`);
-  console.log(`  Limit: ${limit}`);
-  console.log(`  Remaining: ${remaining}`);
-  console.log(`  Used: ${used}`);
-  console.log(`  Reset at: ${new Date(resetTimestamp * 1000).toISOString()}`);
-
-  // Check if we're approaching the rate limit (less than 10% remaining or less than 5 requests)
-  const threshold = Math.max(5, Math.ceil(limit * 0.1)); // 10% of limit or minimum 5 requests
-  
-  if (remaining <= threshold) {
-    const now = Math.floor(Date.now() / 1000);
-    const resetTime = resetTimestamp;
-    const waitTimeSeconds = Math.max(1, resetTime - now);
-    
-    console.log(`Approaching rate limit! Remaining requests: ${remaining} (threshold: ${threshold})`);
-    console.log(`Rate limit will reset in ${waitTimeSeconds} seconds`);
-    console.log(`Delaying next request to avoid hitting rate limit...`);
-    
-    // Wait for the rate limit to reset or a minimum time
-    const waitTimeMs = waitTimeSeconds * 1000;
-    await delay(waitTimeMs);
-    
-    console.log('Delay completed, resuming requests');
-  } else if (remaining <= threshold * 2) {
-    console.log(`Warning: Getting close to rate limit. Remaining requests: ${remaining}`);
-  }
-};
-
-// Enhanced GraphQL request handler that captures response headers
-const graphqlWithRateLimitCheck = async (graphqlWithAuth: any, query: string, variables?: any) => {
-  let retryCount = 0;
-  const maxRetries = 5;
-
-  while (retryCount < maxRetries) {
-    try {
-      // Make the GraphQL request and capture the full response
-      const response = await graphqlWithAuth(query, variables);
-      
-      // Check rate limit from response headers
-      await checkRateLimitFromHeaders(response, graphqlWithAuth);
-      
-      return response;
-    } catch (error: any) {
-      retryCount++;
-
-      // Check if it's a rate limit error
-      const isRateLimitError = error.message?.includes('rate limit') ||
-        error.message?.includes('secondary rate limit') ||
-        error.message?.includes('API rate limit exceeded');
-
-      if (!isRateLimitError || retryCount >= maxRetries) {
-        throw error;
-      }
-
-      console.log(`Rate limit hit (attempt ${retryCount}/${maxRetries})`);
-
-      try {
-        // Get current rate limit status
-        const rateLimitInfo = await getRateLimitStatus(graphqlWithAuth);
-        const resetAt = new Date(rateLimitInfo.rateLimit.resetAt);
-        const now = new Date();
-        const waitTimeMs = resetAt.getTime() - now.getTime();
-
-        if (waitTimeMs > 0) {
-          const waitTimeSeconds = Math.ceil(waitTimeMs / 1000);
-          console.log(`Rate limit will reset at ${resetAt.toISOString()}`);
-          console.log(`Waiting ${waitTimeSeconds} seconds for rate limit to reset...`);
-          await delay(waitTimeMs);
-        } else {
-          // If reset time is in the past, wait a minimum time
-          console.log('Rate limit should be reset, waiting 5 seconds to be safe...');
-          await delay(5000);
-        }
-      } catch (rateLimitError) {
-        // If we can't get rate limit info, fall back to exponential backoff
-        console.log('Could not fetch rate limit info, using fallback delay');
-        const fallbackDelay = 5000 * Math.pow(2, retryCount - 1); // 5s, 10s, 20s, 40s, 80s
-        console.log(`Waiting ${fallbackDelay}ms before retry...`);
-        await delay(fallbackDelay);
-      }
-    }
-  }
-};
-
-// Function to handle rate limit with intelligent waiting (kept for backward compatibility)
+// Function to handle rate limit with intelligent waiting
 const handleRateLimit = async (graphqlWithAuth: any, fn: () => Promise<any>, maxRetries = 5) => {
   let retryCount = 0;
 
@@ -384,7 +264,9 @@ async function run() {
         cursor
       };
 
-      const response = await graphqlWithRateLimitCheck(graphqlWithAuth, query, variables) as GraphQLResponse;
+      const response = await handleRateLimit(graphqlWithAuth, async () => {
+        return await graphqlWithAuth(query, variables) as GraphQLResponse;
+      }) as GraphQLResponse;
       const starredRepos = response.user.starredRepositories;
 
       if (!totalCount) {
