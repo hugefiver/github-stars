@@ -73,13 +73,95 @@ async function getRateLimitStatus(graphqlWithAuth: any): Promise<RateLimitRespon
   }
 }
 
+// Function to check rate limit headers and wait if necessary
+const checkRateLimitHeaders = async (headers: any, graphqlWithAuth: any, retryCount = 0) => {
+  const retryAfter = headers['retry-after'];
+  const ratelimitRemaining = headers['x-ratelimit-remaining'];
+  const ratelimitReset = headers['x-ratelimit-reset'];
+
+  let waitTimeMs = 0;
+
+  if (retryAfter) {
+    // If retry-after header is present, wait for that many seconds
+    waitTimeMs = parseInt(retryAfter) * 1000;
+    console.log(`Retry-after header present: ${retryAfter} seconds`);
+  } else if (ratelimitRemaining === '0' && ratelimitReset) {
+    // If x-ratelimit-remaining is 0, wait until x-ratelimit-reset time
+    const resetTime = parseInt(ratelimitReset) * 1000; // Convert to milliseconds
+    const now = Date.now();
+    waitTimeMs = Math.max(0, resetTime - now);
+    console.log(`Rate limit remaining is 0, reset at ${new Date(resetTime).toISOString()}`);
+  } else if (parseInt(ratelimitRemaining) <= 5) {
+    // If rate limit is running low (<= 5 remaining), check GraphQL rate limit status
+    try {
+      const rateLimitInfo = await getRateLimitStatus(graphqlWithAuth);
+      const remaining = rateLimitInfo.rateLimit.remaining;
+      const resetAt = new Date(rateLimitInfo.rateLimit.resetAt);
+      const now = new Date();
+      
+      if (remaining <= 5) {
+        waitTimeMs = Math.max(0, resetAt.getTime() - now.getTime());
+        if (waitTimeMs > 0) {
+          console.log(`GraphQL rate limit running low (${remaining} remaining), will reset at ${resetAt.toISOString()}`);
+        }
+      }
+    } catch (rateLimitError) {
+      // If we can't get rate limit info, use a small delay as precaution
+      console.log('Could not fetch GraphQL rate limit info, using precautionary delay');
+      waitTimeMs = 5000; // 5 seconds
+    }
+  }
+
+  // Apply exponential backoff if this is a retry
+  if (retryCount > 0) {
+    const backoffTime = 60000 * Math.pow(2, retryCount - 1); // 60s, 120s, 240s, 480s, 960s
+    waitTimeMs = Math.max(waitTimeMs, backoffTime);
+    console.log(`Applying exponential backoff for retry ${retryCount}: ${backoffTime}ms`);
+  }
+
+  if (waitTimeMs > 0) {
+    const waitTimeSeconds = Math.ceil(waitTimeMs / 1000);
+    console.log(`Waiting ${waitTimeSeconds} seconds due to rate limit headers...`);
+    await delay(waitTimeMs);
+  }
+};
+
 // Function to handle rate limit with intelligent waiting
 const handleRateLimit = async (graphqlWithAuth: any, fn: () => Promise<any>, maxRetries = 5) => {
   let retryCount = 0;
 
   while (retryCount < maxRetries) {
     try {
-      return await fn();
+      // Execute the function and check headers even on success
+      const result = await fn();
+      
+      // Check if the result has headers (for successful responses)
+      if (result && result.headers) {
+        await checkRateLimitHeaders(result.headers, graphqlWithAuth, retryCount);
+      } else {
+        // For GraphQL responses, check rate limit status periodically
+        if (retryCount % 2 === 0) { // Check every 2 requests to avoid overhead
+          try {
+            const rateLimitInfo = await getRateLimitStatus(graphqlWithAuth);
+            const remaining = rateLimitInfo.rateLimit.remaining;
+            if (remaining <= 5) {
+              const resetAt = new Date(rateLimitInfo.rateLimit.resetAt);
+              const now = new Date();
+              const waitTimeMs = Math.max(0, resetAt.getTime() - now.getTime());
+              
+              if (waitTimeMs > 0) {
+                console.log(`GraphQL rate limit running low (${remaining} remaining), will reset at ${resetAt.toISOString()}`);
+                console.log(`Waiting ${Math.ceil(waitTimeMs / 1000)} seconds...`);
+                await delay(waitTimeMs);
+              }
+            }
+          } catch (rateLimitError) {
+            // Silently ignore if we can't check rate limit on success
+          }
+        }
+      }
+      
+      return result;
     } catch (error: any) {
       retryCount++;
 
@@ -98,55 +180,7 @@ const handleRateLimit = async (graphqlWithAuth: any, fn: () => Promise<any>, max
 
       // Check for response headers
       const headers = error.headers || {};
-      const retryAfter = headers['retry-after'];
-      const ratelimitRemaining = headers['x-ratelimit-remaining'];
-      const ratelimitReset = headers['x-ratelimit-reset'];
-
-      let waitTimeMs = 0;
-
-      if (retryAfter) {
-        // If retry-after header is present, wait for that many seconds
-        waitTimeMs = parseInt(retryAfter) * 1000;
-        console.log(`Retry-after header present: ${retryAfter} seconds`);
-      } else if (ratelimitRemaining === '0' && ratelimitReset) {
-        // If x-ratelimit-remaining is 0, wait until x-ratelimit-reset time
-        const resetTime = parseInt(ratelimitReset) * 1000; // Convert to milliseconds
-        const now = Date.now();
-        waitTimeMs = Math.max(0, resetTime - now);
-        console.log(`Rate limit remaining is 0, reset at ${new Date(resetTime).toISOString()}`);
-      } else {
-        // Otherwise, check GraphQL rate limit status
-        try {
-          const rateLimitInfo = await getRateLimitStatus(graphqlWithAuth);
-          const resetAt = new Date(rateLimitInfo.rateLimit.resetAt);
-          const now = new Date();
-          waitTimeMs = Math.max(0, resetAt.getTime() - now.getTime());
-          
-          if (waitTimeMs > 0) {
-            console.log(`GraphQL rate limit will reset at ${resetAt.toISOString()}`);
-          }
-        } catch (rateLimitError) {
-          // If we can't get rate limit info, use exponential backoff
-          console.log('Could not fetch rate limit info, using exponential backoff');
-          waitTimeMs = 60000 * Math.pow(2, retryCount - 1); // 60s, 120s, 240s, 480s, 960s
-        }
-      }
-
-      // Ensure minimum wait time of 1 minute if no specific wait time was determined
-      if (waitTimeMs <= 0) {
-        waitTimeMs = 60000; // 1 minute
-        console.log('No specific wait time determined, using minimum 1 minute wait');
-      }
-
-      // Apply exponential backoff for secondary rate limits
-      if (error.message?.includes('secondary rate limit')) {
-        waitTimeMs = Math.max(waitTimeMs, 60000 * Math.pow(2, retryCount - 1));
-        console.log(`Secondary rate limit detected, applying exponential backoff: ${waitTimeMs}ms`);
-      }
-
-      const waitTimeSeconds = Math.ceil(waitTimeMs / 1000);
-      console.log(`Waiting ${waitTimeSeconds} seconds before retry...`);
-      await delay(waitTimeMs);
+      await checkRateLimitHeaders(headers, graphqlWithAuth, retryCount);
     }
   }
 
