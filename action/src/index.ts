@@ -182,6 +182,21 @@ interface SimplifiedRepository {
   owner_avatar_url: string;
   owner_html_url: string;
   topics: string[];
+  licenseInfo: {
+    key: string;
+    name: string;
+    spdxId: string;
+    url: string | null;
+  } | null;
+  isArchived: boolean;
+  isFork: boolean;
+  isMirror: boolean;
+  parent: {
+    name: string;
+    nameWithOwner: string;
+    url: string;
+  } | null;
+  pushedAt: string;
 }
 
 async function run() {
@@ -410,7 +425,13 @@ async function run() {
       owner_login: repo.owner.login,
       owner_avatar_url: repo.owner.avatar_url,
       owner_html_url: repo.owner.html_url,
-      topics: repo.topics
+      topics: repo.topics,
+      licenseInfo: repo.licenseInfo,
+      isArchived: repo.isArchived,
+      isFork: repo.isFork,
+      isMirror: repo.isMirror,
+      parent: repo.parent,
+      pushedAt: repo.pushedAt
     }));
 
     // 确保简化版输出目录存在
