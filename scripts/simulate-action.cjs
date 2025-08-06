@@ -29,19 +29,20 @@ async function simulateAction() {
     let totalCount = 0;
     let retryCount = 0;
     const maxRetries = 3;
+    let [page, maxPage] = [0, 10]; // 分页参数
     
-    while (hasNextPage && retryCount <= maxRetries) {
+    while (hasNextPage && retryCount <= maxRetries && page < maxPage) {
       try {
         const query = `
-          query($username: String!, $cursor: String) {
-            user(login: $username) {
-              starredRepositories(first: 100, after: $cursor, orderBy: {field: STARRED_AT, direction: DESC}) {
-                totalCount
-                pageInfo {
-                  hasNextPage
-                  endCursor
-                }
-                edges {
+        query($username: String!, $cursor: String) {
+          user(login: $username) {
+            starredRepositories(first: 20, after: $cursor, orderBy: {field: STARRED_AT, direction: DESC}) {
+              totalCount
+              pageInfo {
+                hasNextPage
+                endCursor
+              }
+              edges {
                 node {
                   id
                   name
@@ -76,12 +77,87 @@ async function simulateAction() {
                       }
                     }
                   }
+                  licenseInfo {
+                    key
+                    name
+                    spdxId
+                    url
+                  }
+                  fundingLinks {
+                    platform
+                    url
+                  }
+                  isArchived
+                  isFork
+                  parent {
+                    name
+                    nameWithOwner
+                    url
+                  }
+                  isMirror
+                  latestRelease {
+                    name
+                    tagName
+                    createdAt
+                    url
+                  }
+                  milestones(first: 10) {
+                    nodes {
+                      title
+                      description
+                      state
+                      dueOn
+                      url
+                    }
+                  }
+                  mirrorUrl
+                  packages(first: 10) {
+                    totalCount
+                    nodes {
+                      name
+                      packageType
+                      version(version: "latest") {
+                        id
+                        version
+                        preRelease
+                        platform
+                        summary
+                        readme
+                        statistics {
+                          downloadsTotalCount
+                        }
+                        release {
+                          name
+                          tagName
+                          createdAt
+                          url
+                        }
+                        package {
+                          name
+                          packageType
+                          repository {
+                            name
+                            nameWithOwner
+                            url
+                          }
+                        }
+                        files(first: 10) {
+                          nodes {
+                            name
+                            size
+                            url
+                          }
+                        }
+                      }
+                    }
+                  }
+                  pushedAt
                 }
                 starredAt
               }
-              }
             }
           }
+        }
         `;
         
         const variables = {
@@ -155,6 +231,7 @@ async function simulateAction() {
         // 添加延迟以避免速率限制
         await new Promise(resolve => setTimeout(resolve, 1000));
         
+        page++;
       } catch (error) {
         if (error.message.includes('rate limit')) {
           retryCount++;

@@ -150,7 +150,7 @@ async function run() {
       const query = `
         query($username: String!, $cursor: String) {
           user(login: $username) {
-            starredRepositories(first: 100, after: $cursor, orderBy: {field: STARRED_AT, direction: ASC}) {
+            starredRepositories(first: 50, after: $cursor, orderBy: {field: STARRED_AT, direction: ASC}) {
               totalCount
               pageInfo {
                 hasNextPage

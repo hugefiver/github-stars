@@ -19,7 +19,7 @@ async function testGraphQLQuery() {
       query($username: String!) {
         user(login: $username) {
           login
-          starredRepositories(first: 5) {
+          starredRepositories(first: 100, orderBy: {field: STARRED_AT, direction: ASC}) {
             totalCount
             pageInfo {
               hasNextPage
