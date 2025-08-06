@@ -1,232 +1,123 @@
-# GitHub Copilot Instructions for GitHub Stars Search
+# GitHub Stars Search - AI Coding Instructions
 
-## Project Overview
+## Architecture Overview
 
-This is a comprehensive GitHub Stars Search application that consists of two main components:
+This is a dual-component system that automatically fetches and displays GitHub starred repositories:
 
-1. **GitHub Action Backend** (`action/`): Automatically fetches starred repositories from GitHub API using GraphQL
-2. **React Frontend** (`src/`): Displays and allows searching/filtering of starred repositories
+1. **GitHub Action** (`/action/`) - Fetches data via GraphQL API, outputs structured JSON
+2. **React Frontend** (`/src/`) - Provides search/filter UI using the JSON data
 
-The application automatically syncs GitHub starred repositories daily and provides a responsive web interface for browsing and searching through them.
+**Data Flow**: GitHub GraphQL API → Action → JSON files → Frontend → User Interface
 
-## Technology Stack
+## Critical Development Workflows
 
-### Backend (GitHub Action)
-- **Runtime**: Node.js 24
-- **GitHub API**: GraphQL with Octokit
-- **Authentication**: GitHub token
-- **Rate Limiting**: Intelligent handling with exponential backoff
-- **Output**: JSON files (full and simplified versions)
-
-### Frontend
-- **Framework**: React 18 with TypeScript
-- **Build Tool**: Vite
-- **State Management**: Jotai atoms
-- **Search**: MiniSearch for performant client-side search
-- **Styling**: SCSS with responsive design
-- **Deployment**: GitHub Pages
-
-### Development
-- **Package Manager**: pnpm
-- **TypeScript**: Strict type checking
-- **Testing**: Manual testing with simulation scripts
-
-## Project Structure
-
-```
-github-stars-search/
-├── .github/
-│   ├── workflows/           # GitHub Actions workflows
-│   └── copilot-instructions.md # This file
-├── action/                  # GitHub Action source code
-│   ├── src/
-│   │   ├── index.ts        # Main action logic
-│   │   └── types/          # TypeScript definitions
-│   ├── action.yml          # Action configuration
-│   └── package.json
-├── src/                    # Frontend source code
-│   ├── App.tsx            # Main React component
-│   ├── types.ts           # Frontend type definitions
-│   ├── store/             # Jotai state management
-│   └── ...
-├── docs/                   # Built frontend and data files
-├── data/                   # Raw data files
-├── scripts/               # Testing and simulation scripts
-└── package.json
-```
-
-## Key Architecture Patterns
-
-### Data Flow
-1. **GitHub Action** fetches data from GitHub API
-2. **Full data** saved as `starred-repos.json`
-3. **Simplified data** saved as `starred-repos-simple.json`
-4. **Frontend** loads simplified data for display
-5. **Client-side search** using MiniSearch
-
-### State Management (Frontend)
-- **Persistent settings**: Jotai atoms (sortBy, sortOrder, showSettings, etc.)
-- **Transient state**: useState (searchTerm, selectedLanguage, selectedTag)
-- **Search index**: MiniSearch instance for performant searching
-
-### Error Handling
-- **Action**: Rate limit handling with intelligent retries
-- **Frontend**: Graceful error display and loading states
-- **API**: Comprehensive error logging and user feedback
-
-## Coding Standards
-
-### TypeScript
-- Use strict type checking
-- Define interfaces for all data structures
-- Use proper null checking and optional chaining
-- Leverage TypeScript's type inference where appropriate
-
-### React
-- Use functional components with hooks
-- Implement proper dependency arrays in useEffect
-- Use useMemo for expensive computations
-- Keep components focused and single-purpose
-
-### GraphQL
-- Use typed queries with proper variable definitions
-- Handle pagination with cursor-based approach
-- Implement rate limit awareness
-- Use field aliases for clarity
-
-### GitHub Action Development
-- Use proper input/output definitions
-- Implement comprehensive error handling
-- Use core.setFailed for action failures
-- Log progress with console.log
-
-## Development Workflow
-
-### Setting Up Development Environment
+### Frontend Development
 ```bash
-# Clone repository
-git clone https://github.com/hugefiver/github-stars-search.git
-cd github-stars-search
-
-# Install dependencies
-pnpm install
-
-# Install action dependencies
-cd action
-pnpm install
-cd ..
-
-# Start development server
-pnpm run dev
+npm install && npm run dev    # Start Vite dev server
+npm run build                 # Production build → dist/
 ```
 
-### Building and Testing
+### GitHub Action Development  
 ```bash
-# Build frontend
-pnpm run build
-
-# Build action
-cd action
-pnpm run build
-
-# Test action locally
-node ../scripts/simulate-action.cjs
+cd action && npm install && npm run build  # Compiles TypeScript → dist/index.js using ncc
 ```
 
-### Deployment
-- Frontend automatically deploys to GitHub Pages
-- Action runs daily to fetch new data
-- Manual triggers available for immediate updates
+### Testing Action Logic
+```bash
+node scripts/test-graphql-query.cjs     # Test GraphQL queries
+node scripts/simulate-action.cjs        # Full action simulation
+```
 
-## Important File Relationships
+## Project-Specific Patterns
 
-### Data Structures
-- `action/src/types/github.ts`: GraphQL API response types
-- `src/types.ts`: Frontend data types
-- Data flows from Action types → Frontend types with simplification
+### State Management (Jotai)
+- All app state lives in `/src/store/atoms.ts` using Jotai atoms
+- Example: `const [sortBy, setSortBy] = useAtom(sortByAtom)`
+- Persistent state uses `atomWithStorage` for localStorage persistence
+- No Redux/Context - pure atomic state management
 
-### Configuration Files
-- `action/action.yml`: Action input/output definitions
-- `package.json`: Frontend dependencies and scripts
-- `action/package.json`: Action dependencies and scripts
+### Search Implementation (MiniSearch)
+- Search index built in `App.tsx` using MiniSearch library
+- Indexes: `name`, `full_name`, `description`, `language`, `topics`
+- Boost weights: name/full_name (2x), topics (1.5x)
+- Supports fuzzy matching and prefix search
 
-### State Management
-- `src/store/atoms.ts`: Jotai atom definitions
-- State persistence across page reloads for user preferences
+### Data Structure Transformation
+```typescript
+// Action outputs two formats:
+// 1. Full: starred-repos.json (complete GraphQL data)
+// 2. Simplified: starred-repos-simple.json (frontend optimized)
 
-## Common Development Tasks
+// Frontend uses simplified format for performance:
+interface Repository {
+  id: number;
+  languages?: Record<string, { percentage: string }>;  // Key pattern
+  topics: string[];
+  // ... other fields
+}
+```
 
-### Adding New Search Filters
-1. Update filter state in `App.tsx`
-2. Add filter UI components
-3. Modify search logic in `filteredAndSortedRepos`
-4. Update type definitions if needed
+### TypeScript Patterns
+- Comprehensive type definitions in `/src/types.ts`
+- GraphQL types in `/action/src/types/github.ts`
+- Strict typing for API responses and UI components
 
-### Modifying GraphQL Query
-1. Update query in `action/src/index.ts`
-2. Update TypeScript interfaces in `action/src/types/github.ts`
-3. Update data processing logic
-4. Test with simulation scripts
+## Critical Integration Points
 
-### Styling Changes
-1. Modify SCSS files in `src/`
-2. Use responsive design patterns
-3. Test on multiple screen sizes
-4. Consider accessibility implications
+### GitHub Action Configuration
+- Entry point: `/action/action.yml` defines inputs/outputs
+- Main logic: `/action/src/index.ts` with rate limiting & pagination
+- Build artifact: `/action/dist/index.js` (committed to repo)
 
-## Performance Considerations
+### CI/CD Pipeline (`.github/workflows/fetch-starred-repos.yml`)
+```yaml
+# Key workflow steps:
+1. Run action to fetch data → docs/data/*.json
+2. Build frontend → dist/
+3. Copy dist/* to docs/ (GitHub Pages source)
+4. Deploy docs/ to gh-pages branch
+```
 
-### Frontend Optimization
-- Use MiniSearch for efficient client-side search
-- Implement virtual scrolling for large datasets
-- Use useMemo for expensive computations
-- Lazy load non-critical components
+### Data Sources
+- Frontend supports custom data URLs via Settings modal
+- Default: `./data/starred-repos-simple.json` (relative to site)
+- Production data stored in `docs/data/` directory
 
-### Action Optimization
-- Implement intelligent rate limiting
-- Use pagination for large datasets
-- Minimize API calls with efficient queries
-- Handle edge cases gracefully
+## Essential File Relationships
 
-## Testing Guidelines
+```
+action/src/index.ts          → GitHub GraphQL API interaction
+src/App.tsx                  → Main UI component with search logic  
+src/store/atoms.ts           → Jotai state definitions
+src/types.ts                 → Frontend TypeScript interfaces
+action/src/types/github.ts   → GraphQL response types
+docs/data/*.json             → Generated data files for frontend
+```
 
-### Action Testing
-- Use simulation scripts in `scripts/` directory
-- Test with various repository sizes
-- Verify rate limit handling
-- Test error scenarios
+## Rate Limiting & API Patterns
 
-### Frontend Testing
-- Test search functionality with various queries
-- Verify filter combinations work correctly
-- Test responsive design on different devices
-- Validate data loading and error states
+- Intelligent rate limit handling in action with retry logic
+- Uses GitHub GraphQL API with cursor-based pagination
+- Fetches detailed language statistics and repository metadata
+- Handles secondary rate limits with exponential backoff
 
-## Contributing
+## Language Statistics Processing
 
-When contributing to this project:
-1. Follow the existing code patterns and conventions
-2. Update type definitions when changing data structures
-3. Test changes thoroughly before submitting
-4. Update documentation as needed
-5. Ensure both frontend and action work correctly
+Languages are processed with percentage calculations:
+```typescript
+// Action transforms GraphQL language data to:
+languages: {
+  "TypeScript": { bytes: 12345, percentage: "45.2%" },
+  "JavaScript": { bytes: 8901, percentage: "32.5%" }
+}
+// Frontend only needs percentage for display
+```
 
-## GitHub Copilot Usage Tips
+## Important Notes
 
-### For Frontend Development
-- Use existing component patterns as reference
-- Leverage Jotai atoms for persistent state
-- Follow TypeScript type definitions strictly
-- Use MiniSearch for search-related functionality
-
-### For Action Development
-- Follow GraphQL query patterns
-- Implement proper error handling
-- Use the existing rate limiting approach
-- Test with simulation scripts
-
-### General Tips
-- Refer to existing code for patterns
-- Use the project's established conventions
-- Consider performance implications
-- Maintain type safety throughout
+- **Do not modify any existing test data or test cases** (none currently exist)
+- **Do not modify files unrelated to your task** - surgical changes only
+- Project is completely AI-generated (maintain this pattern)
+- Uses pnpm in CI but npm works locally for development
+- Frontend has infinite scroll implemented directly in App.tsx with scroll event listeners
+- Search supports real-time filtering by language and topics
