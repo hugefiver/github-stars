@@ -226,10 +226,43 @@ async function run() {
                   }
                   mirrorUrl
                   packages(first: 10) {
+                    totalCount
                     nodes {
                       name
                       packageType
-                      version
+                      version(version: "latest") {
+                        id
+                        version
+                        preRelease
+                        platform
+                        summary
+                        readme
+                        statistics {
+                          downloadsTotalCount
+                        }
+                        release {
+                          name
+                          tagName
+                          createdAt
+                          url
+                        }
+                        package {
+                          name
+                          packageType
+                          repository {
+                            name
+                            nameWithOwner
+                            url
+                          }
+                        }
+                        files(first: 10) {
+                          nodes {
+                            name
+                            size
+                            url
+                          }
+                        }
+                      }
                     }
                   }
                   pushedAt
@@ -340,9 +373,42 @@ async function run() {
           packages: (repo.packages?.nodes ?? [])
             .filter((p): p is NonNullable<typeof p> => p !== null)
             .map(p => ({
+              totalCount: repo.packages?.totalCount ?? 0,
               name: p.name,
               packageType: String(p.packageType),
-              version: p.version ? String(p.version) : null
+              version: p.version ? {
+                id: p.version.id,
+                version: p.version.version,
+                preRelease: p.version.preRelease,
+                platform: p.version.platform ?? null,
+                summary: p.version.summary ?? null,
+                readme: p.version.readme ?? null,
+                statistics: p.version.statistics ? {
+                  downloadsTotalCount: p.version.statistics.downloadsTotalCount
+                } : null,
+                release: p.version.release ? {
+                  name: p.version.release.name ?? '',
+                  tagName: p.version.release.tagName,
+                  createdAt: p.version.release.createdAt,
+                  url: p.version.release.url
+                } : null,
+                package: p.version.package ? {
+                  name: p.version.package.name,
+                  packageType: p.version.package.packageType,
+                  repository: p.version.package.repository ? {
+                    name: p.version.package.repository.name,
+                    nameWithOwner: p.version.package.repository.nameWithOwner,
+                    url: p.version.package.repository.url
+                  } : null
+                } : null,
+                files: p.version.files ? {
+                  nodes: p.version.files.nodes?.filter((f): f is NonNullable<typeof f> => f !== null).map(f => ({
+                    name: f.name,
+                    size: f.size ?? 0,
+                    url: String(f.url)
+                  })) || []
+                } : null
+              } : null
             })) || [],
           pushedAt: repo.pushedAt ?? null
         });

@@ -7,6 +7,10 @@
   "updated_at": "2025-08-06",
   "version": "1.1.0",
   "cline": {
+    "exclude_files": [
+      "action/src/types/graphql.ts",
+      "document/schema.docs.graphql"
+    ],
     "prompts": {
       "development": {
         "setup": "这是一个完全由AI生成的GitHub星标仓库搜索应用，使用React + Vite构建。项目包含前端界面和GitHub Action两部分。前端提供搜索、过滤、排序功能，后端通过GitHub Actions自动获取用户的星标仓库数据。项目遵循AI生成内容政策，所有代码和文档必须由AI生成。",

@@ -63,9 +63,42 @@ export interface ProcessedRepository {
   }[];
   mirrorUrl: string | null;
   packages: {
+    totalCount: number;
     name: string;
     packageType: string;
-    version: string | null;
+    version: {
+      id: string;
+      version: string;
+      preRelease: boolean;
+      platform: string | null;
+      summary: string | null;
+      readme: string | null;
+      statistics: {
+        downloadsTotalCount: number;
+      } | null;
+      release: {
+        name: string;
+        tagName: string;
+        createdAt: string;
+        url: string;
+      } | null;
+      package: {
+        name: string;
+        packageType: string;
+        repository: {
+          name: string;
+          nameWithOwner: string;
+          url: string;
+        } | null;
+      } | null;
+      files: {
+        nodes: {
+          name: string;
+          size: number;
+          url: string;
+        }[];
+      } | null;
+    } | null;
   }[];
   pushedAt: string | null;
 }
