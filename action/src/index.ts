@@ -336,12 +336,6 @@ async function run() {
         console.log(`已发送 ${requestCount} 个请求，延迟 2 秒...`);
         await delay(2000);
       }
-
-        // 检查响应是否有效
-        if (!response || !response.user) {
-          throw new Error('Invalid GraphQL response: user data is missing. This could be due to an invalid username, insufficient permissions, or GitHub API issues.');
-        }
-
         const starredRepos = response.user.starredRepositories;
 
         if (!totalCount) {
