@@ -9,7 +9,7 @@ export interface GraphQLResponse {
 }
 
 export interface ProcessedRepository {
-  id: number;
+  id: string;
   name: string;
   full_name: string;
   html_url: string;

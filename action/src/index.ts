@@ -5,7 +5,7 @@ import * as path from "path";
 import { ProcessedRepository, GraphQLResponse } from "./types/github";
 
 interface SimplifiedRepository {
-  id: number;
+  id: string;
   name: string;
   full_name: string;
   html_url: string;
@@ -312,7 +312,7 @@ async function run() {
           repo.repositoryTopics.nodes?.flatMap(n => n?.topic?.name).filter((name): name is string => name !== undefined) : []) ?? [];
 
         processedRepos.push({
-          id: index++,
+          id: repo.id,
           name: repo.name,
           full_name: repo.nameWithOwner,
           html_url: repo.url,
@@ -385,6 +385,19 @@ async function run() {
 
     console.log(`All repositories processed: ${processedRepos.length}`);
 
+    // 根据 id 去重
+    const uniqueRepos = processedRepos.filter((repo, index, self) =>
+      index === self.findIndex(r => r.id === repo.id)
+    );
+    const duplicateCount = processedRepos.length - uniqueRepos.length;
+    console.log(`去重完成:`);
+    console.log(`- 原始仓库数量: ${processedRepos.length}`);
+    console.log(`- 去重后仓库数量: ${uniqueRepos.length}`);
+    console.log(`- 重复仓库数量: ${duplicateCount}`);
+    if (duplicateCount > 0) {
+      console.log(`- 去重率: ${((duplicateCount / processedRepos.length) * 100).toFixed(2)}%`);
+    }
+
     // 确保输出目录存在
     const outputDir = path.dirname(outputFile);
     if (!fs.existsSync(outputDir)) {
@@ -392,14 +405,14 @@ async function run() {
     }
 
     // 保存完整数据到文件
-    fs.writeFileSync(outputFile, JSON.stringify(processedRepos, null, 2));
+    fs.writeFileSync(outputFile, JSON.stringify(uniqueRepos, null, 2));
     console.log(`Full data saved to ${outputFile}`);
 
     // 检查是否在生产环境中（通过环境变量判断）
     const isProduction = process.env.NODE_ENV === 'production' || process.env.GITHUB_ACTIONS === 'true';
 
     // 生成简化版本（包含languages字段）
-    const simplifiedRepos: SimplifiedRepository[] = processedRepos.map(repo => ({
+    const simplifiedRepos: SimplifiedRepository[] = uniqueRepos.map(repo => ({
       id: repo.id,
       name: repo.name,
       full_name: repo.full_name,
@@ -439,7 +452,7 @@ async function run() {
     }
 
     // 设置输出参数
-    core.setOutput('repositories-count', processedRepos.length.toString());
+    core.setOutput('repositories-count', uniqueRepos.length.toString());
     core.setOutput('output-file', outputFile);
     core.setOutput('simple-output-file', simpleOutputFile);
 
