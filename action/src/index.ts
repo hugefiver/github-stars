@@ -42,7 +42,7 @@ interface SimplifiedRepository {
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 // 硬编码的请求大小设置
-const initialRequestSize = 100;  // 初始请求大小
+const initialRequestSize = 70;  // 初始请求大小
 const minRequestSize = 1;         // 最小请求大小
 let currentRequestSize = initialRequestSize;  // 当前请求大小
 
