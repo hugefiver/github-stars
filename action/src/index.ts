@@ -121,12 +121,16 @@ const handleRateLimit = async (graphqlWithAuth: any, fn: () => Promise<any>, max
 };
 
 async function run() {
+  // 获取输入参数
+  const githubToken = core.getInput('github-token');
+  const username = core.getInput('username');
+  const outputFile = core.getInput('output-file');
+  const simpleOutputFile = core.getInput('simple-output-file');
+  
+  // 声明variables变量以便在catch块中访问
+  let variables: { username: string; cursor: string | null } = { username: '', cursor: null };
+
   try {
-    // 获取输入参数
-    const githubToken = core.getInput('github-token');
-    const username = core.getInput('username');
-    const outputFile = core.getInput('output-file');
-    const simpleOutputFile = core.getInput('simple-output-file');
 
     console.log(`Fetching starred repositories for user: ${username}`);
 
@@ -249,7 +253,7 @@ async function run() {
         }
       `;
 
-      const variables = {
+      variables = {
         username,
         cursor
       };
@@ -440,6 +444,12 @@ async function run() {
     core.setOutput('simple-output-file', simpleOutputFile);
 
   } catch (error) {
+    // 打印请求参数以便调试
+    console.error('GraphQL Variables:');
+    console.error(JSON.stringify(variables, null, 2));
+    console.error('Error Details:');
+    console.error(error);
+    
     core.setFailed(`Error fetching starred repositories: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 }
