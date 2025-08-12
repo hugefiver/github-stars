@@ -41,6 +41,11 @@ interface SimplifiedRepository {
 // Utility function for delay
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
+// 硬编码的请求大小设置
+const initialRequestSize = 100;  // 初始请求大小
+const minRequestSize = 1;         // 最小请求大小
+let currentRequestSize = initialRequestSize;  // 当前请求大小
+
 
 // Function to check rate limit headers and wait if necessary
 const checkRateLimitHeaders = async (headers: any, retryCount = 0) => {
@@ -79,6 +84,63 @@ const checkRateLimitHeaders = async (headers: any, retryCount = 0) => {
     await delay(waitTimeMs);
   }
 };
+
+// 处理未知错误并递减请求大小的函数
+async function handleRequestWithRetry(
+  graphqlWithAuth: any,
+  query: string,
+  variables: any,
+  maxRetries: number = 5
+) {
+  let retryCount = 0;
+  let currentSize = variables.requestSize;
+  
+  while (retryCount < maxRetries) {
+    try {
+      // 先处理速率限制
+      const result = await handleRateLimit(graphqlWithAuth, async () => {
+        return await graphqlWithAuth(query, variables);
+      });
+      
+      // 如果成功，恢复到初始请求大小（如果之前被递减了）
+      if (currentSize < initialRequestSize) {
+        currentRequestSize = initialRequestSize;
+        console.log(`请求成功，恢复请求大小至 ${initialRequestSize}`);
+      }
+      
+      return result;
+    } catch (error: any) {
+      // 如果是速率限制错误，由 handleRateLimit 处理，这里直接抛出
+      const isRateLimitError = error.message?.includes('rate limit') ||
+        error.message?.includes('secondary rate limit') ||
+        error.message?.includes('API rate limit exceeded') ||
+        (error.status === 403 && error.message?.includes('API rate limit exceeded')) ||
+        (error.status === 200 && error.message?.includes('secondary rate limit'));
+      
+      if (isRateLimitError) {
+        throw error;
+      }
+      
+      // 未知错误，递减请求大小
+      currentSize = Math.max(minRequestSize, Math.floor(currentSize / 2));
+      variables.requestSize = currentSize;
+      currentRequestSize = currentSize; // 更新全局当前请求大小
+      retryCount++;
+      
+      console.log(`未知错误: ${error.message}`);
+      console.log(`当前请求参数:`);
+      console.log(`- 用户名: ${variables.username}`);
+      console.log(`- 翻页游标: ${variables.cursor || 'null'}`);
+      console.log(`- 请求大小: ${variables.requestSize}`);
+      console.log(`递减请求大小至 ${currentSize} (重试 ${retryCount}/${maxRetries})`);
+      
+      if (retryCount >= maxRetries || currentSize === minRequestSize) {
+        console.log(`达到最大重试次数或最小请求大小，跳过此批次`);
+        throw error;
+      }
+    }
+  }
+}
 
 // Function to handle rate limit with intelligent waiting
 const handleRateLimit = async (graphqlWithAuth: any, fn: () => Promise<any>, maxRetries = 5) => {
@@ -128,7 +190,7 @@ async function run() {
   const simpleOutputFile = core.getInput('simple-output-file');
   
   // 声明variables变量以便在catch块中访问
-  let variables: { username: string; cursor: string | null } = { username: '', cursor: null };
+  let variables: { username: string; cursor: string | null; requestSize: number } = { username: '', cursor: null, requestSize: initialRequestSize };
 
   try {
 
@@ -151,9 +213,9 @@ async function run() {
 
     while (hasNextPage) {
       const query = `
-        query($username: String!, $cursor: String) {
+        query($username: String!, $cursor: String, $requestSize: Int!) {
           user(login: $username) {
-            starredRepositories(first: 60, after: $cursor, orderBy: {field: STARRED_AT, direction: ASC}) {
+            starredRepositories(first: $requestSize, after: $cursor, orderBy: {field: STARRED_AT, direction: ASC}) {
               totalCount
               pageInfo {
                 hasNextPage
@@ -255,12 +317,16 @@ async function run() {
 
       variables = {
         username,
-        cursor
+        cursor,
+        requestSize: currentRequestSize
       };
 
-      const response = await handleRateLimit(graphqlWithAuth, async () => {
-        return await graphqlWithAuth(query, variables) as GraphQLResponse;
-      }) as GraphQLResponse;
+      try {
+        const response = await handleRequestWithRetry(
+          graphqlWithAuth,
+          query,
+          variables
+        ) as GraphQLResponse;
 
       // 每发送5个请求后延迟5秒
       requestCount++;
@@ -268,16 +334,16 @@ async function run() {
         console.log(`已发送 ${requestCount} 个请求，延迟 2 秒...`);
         await delay(2000);
       }
-      const starredRepos = response.user.starredRepositories;
+        const starredRepos = response.user.starredRepositories;
 
-      if (!totalCount) {
-        totalCount = starredRepos.totalCount;
-        console.log(`Total starred repositories: ${totalCount}`);
-      }
+        if (!totalCount) {
+          totalCount = starredRepos.totalCount;
+          console.log(`Total starred repositories: ${totalCount}`);
+        }
 
-      const edges = starredRepos.edges;
+        const edges = starredRepos.edges;
 
-      for (const edge of edges ?? []) {
+        for (const edge of edges ?? []) {
         if (!edge) {
           console.warn('Skipping empty edge');
           continue;
@@ -376,11 +442,23 @@ async function run() {
         });
       }
 
-      console.log(`Processed ${edges?.length} repositories, total: ${processedRepos.length}/${totalCount}`);
+        console.log(`Processed ${edges?.length} repositories, total: ${processedRepos.length}/${totalCount}`);
 
-      // 检查是否还有下一页
-      hasNextPage = starredRepos.pageInfo.hasNextPage;
-      cursor = starredRepos.pageInfo.endCursor ?? null;
+        // 检查是否还有下一页
+        hasNextPage = starredRepos.pageInfo.hasNextPage;
+        cursor = starredRepos.pageInfo.endCursor ?? null;
+      } catch (error) {
+        // 如果重试后仍然失败，尝试跳过当前批次继续
+        console.log(`当前批次请求失败，尝试继续下一页`);
+        
+        // 这里可以实现更智能的跳过逻辑，比如：
+        // 1. 尝试将 cursor 前移一定数量
+        // 2. 或者直接跳到下一页（如果可能）
+        // 3. 或者终止整个流程
+        
+        // 为了简单起见，我们先终止整个流程
+        throw error;
+      }
     }
 
     console.log(`All repositories processed: ${processedRepos.length}`);
