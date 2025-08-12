@@ -287,21 +287,23 @@ async function run() {
                     nodes {
                       name
                       packageType
-                      latestVersion {
-                        id
-                        version
-                        preRelease
-                        platform
-                        summary
-                        readme
-                        statistics {
-                          downloadsTotalCount
-                        }
-                        release {
-                          name
-                          tagName
-                          createdAt
-                          url
+                      versions(last: 3) {
+                        nodes {
+                          id
+                          version
+                          preRelease
+                          platform
+                          summary
+                          readme
+                          statistics {
+                            downloadsTotalCount
+                          }
+                          release {
+                            name
+                            tagName
+                            createdAt
+                            url
+                          }
                         }
                       }
                     }
@@ -420,23 +422,25 @@ async function run() {
               totalCount: repo.packages?.totalCount ?? 0,
               name: p.name,
               packageType: String(p.packageType),
-              version: p.latestVersion ? {
-                id: p.latestVersion.id,
-                version: p.latestVersion.version,
-                preRelease: p.latestVersion.preRelease,
-                platform: p.latestVersion.platform ?? null,
-                summary: p.latestVersion.summary ?? null,
-                readme: p.latestVersion.readme ?? null,
-                statistics: p.latestVersion.statistics ? {
-                  downloadsTotalCount: p.latestVersion.statistics.downloadsTotalCount
-                } : null,
-                release: p.latestVersion.release ? {
-                  name: p.latestVersion.release.name ?? '',
-                  tagName: p.latestVersion.release.tagName,
-                  createdAt: p.latestVersion.release.createdAt,
-                  url: p.latestVersion.release.url
-                } : null
-              } : null
+              versions: (p.versions?.nodes ?? [])
+                .filter((v): v is NonNullable<typeof v> => v !== null)
+                .map(v => ({
+                  id: v.id,
+                  version: v.version,
+                  preRelease: v.preRelease,
+                  platform: v.platform ?? null,
+                  summary: v.summary ?? null,
+                  readme: v.readme ?? null,
+                  statistics: v.statistics ? {
+                    downloadsTotalCount: v.statistics.downloadsTotalCount
+                  } : null,
+                  release: v.release ? {
+                    name: v.release.name ?? '',
+                    tagName: v.release.tagName,
+                    createdAt: v.release.createdAt,
+                    url: v.release.url
+                  } : null
+                })) || []
             })) || [],
           pushedAt: repo.pushedAt ?? null
         });

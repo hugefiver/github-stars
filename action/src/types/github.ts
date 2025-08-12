@@ -59,7 +59,7 @@ export interface ProcessedRepository {
     totalCount: number;
     name: string;
     packageType: string;
-    version: {
+    versions: {
       id: string;
       version: string;
       preRelease: boolean;
@@ -75,7 +75,7 @@ export interface ProcessedRepository {
         createdAt: string;
         url: string;
       } | null;
-    } | null;
+    }[];
   }[];
   pushedAt: string | null;
 }
