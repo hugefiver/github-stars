@@ -153,7 +153,7 @@ async function run() {
       const query = `
         query($username: String!, $cursor: String) {
           user(login: $username) {
-            starredRepositories(first: 70, after: $cursor, orderBy: {field: STARRED_AT, direction: ASC}) {
+            starredRepositories(first: 60, after: $cursor, orderBy: {field: STARRED_AT, direction: ASC}) {
               totalCount
               pageInfo {
                 hasNextPage
@@ -265,8 +265,8 @@ async function run() {
       // 每发送5个请求后延迟5秒
       requestCount++;
       if (requestCount % 5 === 0) {
-        console.log(`已发送 ${requestCount} 个请求，延迟 5 秒...`);
-        await delay(5000);
+        console.log(`已发送 ${requestCount} 个请求，延迟 2 秒...`);
+        await delay(2000);
       }
       const starredRepos = response.user.starredRepositories;
 
