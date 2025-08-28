@@ -1,9 +1,10 @@
 # GitHub Stars Search
 
-[![AI Created](https://img.shields.io/badge/AI-Fully%20Created-blue?logo=openai)](https://github.com/Qwen3-Coder)
-[![Powered by Qwen3-Coder](https://img.shields.io/badge/Powered%20by-Qwen3--Coder-brightgreen)](https://github.com/Qwen3-Coder)
-[![Built with Void Editor](https://img.shields.io/badge/Built%20with-Void%20Editor-purple?logo=void)](https://github.com/void-editor)
-[![GLM-4.5](https://img.shields.io/badge/GLM-4.5-Enhanced-orange?logo=zhipu-ai)](https://github.com/THUDM/GLM-4)
+[![AI Created](https://img.shields.io/badge/AI-Fully%20Created-blue?logo=openai)](https://github.com/QwenLM)
+[![Powered by Qwen3-Coder](https://img.shields.io/badge/Powered%20by-Qwen3--Coder-brightgreen)](https://github.com/QwenLM)
+[![HooAPI](https://img.shields.io/badge/HooAPI-Enhanced-blue)](https://github.com/HooAPI)
+[![Cline](https://img.shields.io/badge/Cline-AI-blue)](https://github.com/Cline)
+[![Claude Code](https://img.shields.io/badge/Claude%20Code-AI-green)](https://github.com/anthropics)
 
 这是一个自动获取您的 GitHub Star 仓库信息并在网页上展示的工具。它包含两个主要部分：
 

@@ -94,20 +94,20 @@ async function handleRequestWithRetry(
 ) {
   let retryCount = 0;
   let currentSize = variables.requestSize;
-  
+
   while (retryCount < maxRetries) {
     try {
       // 先处理速率限制
       const result = await handleRateLimit(graphqlWithAuth, async () => {
         return await graphqlWithAuth(query, variables);
       });
-      
+
       // 如果成功，恢复到初始请求大小（如果之前被递减了）
       if (currentSize < initialRequestSize) {
         currentRequestSize = initialRequestSize;
         console.log(`请求成功，恢复请求大小至 ${initialRequestSize}`);
       }
-      
+
       return result;
     } catch (error: any) {
       // 如果是速率限制错误，由 handleRateLimit 处理，这里直接抛出
@@ -116,24 +116,24 @@ async function handleRequestWithRetry(
         error.message?.includes('API rate limit exceeded') ||
         (error.status === 403 && error.message?.includes('API rate limit exceeded')) ||
         (error.status === 200 && error.message?.includes('secondary rate limit'));
-      
+
       if (isRateLimitError) {
         throw error;
       }
-      
+
       // 未知错误，递减请求大小
       currentSize = Math.max(minRequestSize, Math.floor(currentSize / 2));
       variables.requestSize = currentSize;
       currentRequestSize = currentSize; // 更新全局当前请求大小
       retryCount++;
-      
+
       console.log(`未知错误: ${error.message}`);
       console.log(`当前请求参数:`);
       console.log(`- 用户名: ${variables.username}`);
       console.log(`- 翻页游标: ${variables.cursor || 'null'}`);
       console.log(`- 请求大小: ${variables.requestSize}`);
       console.log(`递减请求大小至 ${currentSize} (重试 ${retryCount}/${maxRetries})`);
-      
+
       if (retryCount >= maxRetries || currentSize === minRequestSize) {
         console.log(`达到最大重试次数或最小请求大小，跳过此批次`);
         throw error;
@@ -150,12 +150,12 @@ const handleRateLimit = async (graphqlWithAuth: any, fn: () => Promise<any>, max
     try {
       // Execute the function
       const result = await fn();
-      
+
       // Check if the result has headers (for successful responses)
       if (result && result.headers) {
         await checkRateLimitHeaders(result.headers, retryCount);
       }
-      
+
       return result;
     } catch (error: any) {
       retryCount++;
@@ -188,7 +188,7 @@ async function run() {
   const username = core.getInput('username');
   const outputFile = core.getInput('output-file');
   const simpleOutputFile = core.getInput('simple-output-file');
-  
+
   // 声明variables变量以便在catch块中访问
   let variables: { username: string; cursor: string | null; requestSize: number } = { username: '', cursor: null, requestSize: initialRequestSize };
 
@@ -330,12 +330,12 @@ async function run() {
           variables
         ) as GraphQLResponse;
 
-      // 每发送5个请求后延迟5秒
-      requestCount++;
-      if (requestCount % 5 === 0) {
-        console.log(`已发送 ${requestCount} 个请求，延迟 2 秒...`);
-        await delay(2000);
-      }
+        // 每发送5个请求后延迟5秒
+        requestCount++;
+        if (requestCount % 5 === 0) {
+          console.log(`已发送 ${requestCount} 个请求，延迟 2 秒...`);
+          await delay(2000);
+        }
         const starredRepos = response.user.starredRepositories;
 
         if (!totalCount) {
@@ -346,105 +346,105 @@ async function run() {
         const edges = starredRepos.edges;
 
         for (const edge of edges ?? []) {
-        if (!edge) {
-          console.warn('Skipping empty edge');
-          continue;
-        }
-        const repo = edge.node;
-        const starredAt = edge.starredAt;
+          if (!edge) {
+            console.warn('Skipping empty edge');
+            continue;
+          }
+          const repo = edge.node;
+          const starredAt = edge.starredAt;
 
-        // 处理语言数据
-        const languages: Record<string, { bytes: number; percentage: string; color?: string }> = {};
-        if (repo.languages?.edges && repo.languages.totalSize && repo.languages.totalSize > 0) {
-          const totalSize = repo.languages.totalSize;
-          const langEdges = repo.languages.edges;
-          if (langEdges) {
-            for (const langEdge of langEdges) {
-              if (!langEdge || !langEdge.node) {
-                console.warn('Skipping empty language edge');
-                continue;
+          // 处理语言数据
+          const languages: Record<string, { bytes: number; percentage: string; color?: string }> = {};
+          if (repo.languages?.edges && repo.languages.totalSize && repo.languages.totalSize > 0) {
+            const totalSize = repo.languages.totalSize;
+            const langEdges = repo.languages.edges;
+            if (langEdges) {
+              for (const langEdge of langEdges) {
+                if (!langEdge || !langEdge.node) {
+                  console.warn('Skipping empty language edge');
+                  continue;
+                }
+                const languageName = langEdge.node.name;
+                const size = langEdge.size;
+                languages[languageName] = {
+                  bytes: size,
+                  percentage: ((size / totalSize) * 100).toFixed(2),
+                  color: langEdge.node.color ?? undefined
+                };
               }
-              const languageName = langEdge.node.name;
-              const size = langEdge.size;
-              languages[languageName] = {
-                bytes: size,
-                percentage: ((size / totalSize) * 100).toFixed(2),
-                color: langEdge.node.color ?? undefined
-              };
             }
           }
+
+          // 处理topics
+          const topics = (repo.repositoryTopics ?
+            repo.repositoryTopics.nodes?.flatMap(n => n?.topic?.name).filter((name): name is string => name !== undefined) : []) ?? [];
+
+          processedRepos.push({
+            id: repo.id,
+            name: repo.name,
+            full_name: repo.nameWithOwner,
+            html_url: repo.url,
+            description: repo.description ?? null,
+            language: repo.primaryLanguage ? repo.primaryLanguage.name : null,
+            languages: languages,
+            stargazers_count: repo.stargazerCount,
+            forks_count: repo.forkCount,
+            updated_at: repo.updatedAt,
+            created_at: repo.createdAt,
+            starred_at: starredAt,
+            owner: {
+              login: repo.owner.login,
+              avatar_url: repo.owner.avatarUrl,
+              html_url: repo.owner.url
+            },
+            topics: topics,
+            licenseInfo: repo.licenseInfo ? {
+              key: repo.licenseInfo.key,
+              name: repo.licenseInfo.name,
+              spdxId: repo.licenseInfo.spdxId ?? '',
+              url: repo.licenseInfo.url ?? null
+            } : null,
+            fundingLinks: repo.fundingLinks || [],
+            isArchived: repo.isArchived,
+            isFork: repo.isFork,
+            parent: repo.parent ?? null,
+            isMirror: repo.isMirror,
+            latestRelease: repo.latestRelease ? {
+              name: repo.latestRelease.name ?? '',
+              tagName: repo.latestRelease.tagName,
+              createdAt: repo.latestRelease.createdAt,
+              url: repo.latestRelease.url
+            } : null,
+            mirrorUrl: repo.mirrorUrl ?? null,
+            packages: (repo.packages?.nodes ?? [])
+              .filter((p): p is NonNullable<typeof p> => p !== null)
+              .map(p => ({
+                totalCount: repo.packages?.totalCount ?? 0,
+                name: p.name,
+                packageType: String(p.packageType),
+                versions: (p.versions?.nodes ?? [])
+                  .filter((v): v is NonNullable<typeof v> => v !== null)
+                  .map(v => ({
+                    id: v.id,
+                    version: v.version,
+                    preRelease: v.preRelease,
+                    platform: v.platform ?? null,
+                    summary: v.summary ?? null,
+                    readme: v.readme ?? null,
+                    statistics: v.statistics ? {
+                      downloadsTotalCount: v.statistics.downloadsTotalCount
+                    } : null,
+                    release: v.release ? {
+                      name: v.release.name ?? '',
+                      tagName: v.release.tagName,
+                      createdAt: v.release.createdAt,
+                      url: v.release.url
+                    } : null
+                  })) || []
+              })) || [],
+            pushedAt: repo.pushedAt ?? null
+          });
         }
-
-        // 处理topics
-        const topics = (repo.repositoryTopics ?
-          repo.repositoryTopics.nodes?.flatMap(n => n?.topic?.name).filter((name): name is string => name !== undefined) : []) ?? [];
-
-        processedRepos.push({
-          id: repo.id,
-          name: repo.name,
-          full_name: repo.nameWithOwner,
-          html_url: repo.url,
-          description: repo.description ?? null,
-          language: repo.primaryLanguage ? repo.primaryLanguage.name : null,
-          languages: languages,
-          stargazers_count: repo.stargazerCount,
-          forks_count: repo.forkCount,
-          updated_at: repo.updatedAt,
-          created_at: repo.createdAt,
-          starred_at: starredAt,
-          owner: {
-            login: repo.owner.login,
-            avatar_url: repo.owner.avatarUrl,
-            html_url: repo.owner.url
-          },
-          topics: topics,
-          licenseInfo: repo.licenseInfo ? {
-            key: repo.licenseInfo.key,
-            name: repo.licenseInfo.name,
-            spdxId: repo.licenseInfo.spdxId ?? '',
-            url: repo.licenseInfo.url ?? null
-          } : null,
-          fundingLinks: repo.fundingLinks || [],
-          isArchived: repo.isArchived,
-          isFork: repo.isFork,
-          parent: repo.parent ?? null,
-          isMirror: repo.isMirror,
-          latestRelease: repo.latestRelease ? {
-            name: repo.latestRelease.name ?? '',
-            tagName: repo.latestRelease.tagName,
-            createdAt: repo.latestRelease.createdAt,
-            url: repo.latestRelease.url
-          } : null,
-          mirrorUrl: repo.mirrorUrl ?? null,
-          packages: (repo.packages?.nodes ?? [])
-            .filter((p): p is NonNullable<typeof p> => p !== null)
-            .map(p => ({
-              totalCount: repo.packages?.totalCount ?? 0,
-              name: p.name,
-              packageType: String(p.packageType),
-              versions: (p.versions?.nodes ?? [])
-                .filter((v): v is NonNullable<typeof v> => v !== null)
-                .map(v => ({
-                  id: v.id,
-                  version: v.version,
-                  preRelease: v.preRelease,
-                  platform: v.platform ?? null,
-                  summary: v.summary ?? null,
-                  readme: v.readme ?? null,
-                  statistics: v.statistics ? {
-                    downloadsTotalCount: v.statistics.downloadsTotalCount
-                  } : null,
-                  release: v.release ? {
-                    name: v.release.name ?? '',
-                    tagName: v.release.tagName,
-                    createdAt: v.release.createdAt,
-                    url: v.release.url
-                  } : null
-                })) || []
-            })) || [],
-          pushedAt: repo.pushedAt ?? null
-        });
-      }
 
         console.log(`Processed ${edges?.length} repositories, total: ${processedRepos.length}/${totalCount}`);
 
@@ -454,12 +454,12 @@ async function run() {
       } catch (error) {
         // 如果重试后仍然失败，尝试跳过当前批次继续
         console.log(`当前批次请求失败，尝试继续下一页`);
-        
+
         // 这里可以实现更智能的跳过逻辑，比如：
         // 1. 尝试将 cursor 前移一定数量
         // 2. 或者直接跳到下一页（如果可能）
         // 3. 或者终止整个流程
-        
+
         // 为了简单起见，我们先终止整个流程
         throw error;
       }
@@ -544,7 +544,7 @@ async function run() {
     console.error(JSON.stringify(variables, null, 2));
     console.error('Error Details:');
     console.error(error);
-    
+
     core.setFailed(`Error fetching starred repositories: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 }
