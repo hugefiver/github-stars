@@ -3,7 +3,8 @@ import * as gh from './graphql';
 type StarredRepositoryConnection = gh.StarredRepositoryConnection
 
 export interface GraphQLResponse {
-  user: {
+  errors?: Array<{ message: string; type?: string }>;
+  user?: {
     starredRepositories: StarredRepositoryConnection;
   };
 }

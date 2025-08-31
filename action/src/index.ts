@@ -102,6 +102,12 @@ async function handleRequestWithRetry(
         return await graphqlWithAuth(query, variables);
       });
 
+      // 检查GraphQL错误
+      if (result && result.errors && result.errors.length > 0) {
+        const errorMessage = result.errors.map((e: any) => e.message).join('; ');
+        throw new Error(`GraphQL errors: ${errorMessage}`);
+      }
+
       // 如果成功，恢复到初始请求大小（如果之前被递减了）
       if (currentSize < initialRequestSize) {
         currentRequestSize = initialRequestSize;
@@ -329,6 +335,11 @@ async function run() {
           query,
           variables
         ) as GraphQLResponse;
+
+        // 检查响应中是否存在user字段
+        if (!response.user) {
+          throw new Error('GraphQL response missing user data');
+        }
 
         // 每发送5个请求后延迟5秒
         requestCount++;
