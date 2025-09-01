@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { atom, useAtom, useSetAtom } from 'jotai';
 import MiniSearch from 'minisearch';
 import { Repository, LanguageStat, LanguageStats } from './types';
@@ -39,6 +39,164 @@ const getFundingIcon = (platform: string) => {
     default:
       return '💰';
   }
+};
+
+// TagFilterDropdown component for multi-select tag filtering with search
+const TagFilterDropdown = ({ 
+  value, 
+  onChange, 
+  options 
+}: { 
+  value: string[]; 
+  onChange: (tags: string[]) => void; 
+  options: { tag: string; count: number }[] 
+}) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
+  const wrapperRef = useRef<HTMLDivElement>(null);
+  const debounceTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // 防抖处理
+  useEffect(() => {
+    if (debounceTimeoutRef.current) {
+      clearTimeout(debounceTimeoutRef.current);
+    }
+    
+    debounceTimeoutRef.current = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+    }, 300); // 300ms 防抖延迟
+
+    return () => {
+      if (debounceTimeoutRef.current) {
+        clearTimeout(debounceTimeoutRef.current);
+      }
+    };
+  }, [searchTerm]);
+
+  // 点击外部关闭下拉
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (wrapperRef.current && !wrapperRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // 过滤选项
+  const filteredOptions = useMemo(() => {
+    if (!debouncedSearchTerm.trim()) return options;
+    return options.filter(option => 
+      option.tag.toLowerCase().includes(debouncedSearchTerm.toLowerCase())
+    );
+  }, [options, debouncedSearchTerm]);
+
+  const handleSelect = (tag: string) => {
+    const newTags = value.includes(tag)
+      ? value.filter(t => t !== tag)
+      : [...value, tag];
+    onChange(newTags);
+    setSearchTerm('');
+  };
+
+  const handleClear = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onChange([]);
+    setSearchTerm('');
+  };
+
+  const handleClearTag = (e: React.MouseEvent, tag: string) => {
+    e.stopPropagation();
+    e.preventDefault();
+    onChange(value.filter(t => t !== tag));
+  };
+
+  return (
+    <div className="tag-filter-dropdown multi-select" ref={wrapperRef}>
+      <div 
+        className="dropdown-trigger"
+      >
+        <div className="selected-tags">
+          {value.map(tag => (
+            <div key={tag} className="selected-tag">
+              {tag}
+              <button 
+                className="tag-remove" 
+                onClick={(e) => handleClearTag(e, tag)}
+                aria-label={`Remove ${tag}`}
+              >
+                ×
+              </button>
+            </div>
+          ))}
+          <input
+            type="text"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder={value.length === 0 ? "Filter by tags..." : ""}
+            className="dropdown-input"
+            onFocus={() => setIsOpen(true)}
+            onClick={() => setIsOpen(true)}
+            onKeyDown={(e) => {
+              // 如果输入框为空且按下了退格键，则删除最后一个标签
+              if (e.key === 'Backspace' && searchTerm === '' && value.length > 0) {
+                e.preventDefault();
+                const newTags = [...value];
+                newTags.pop();
+                onChange(newTags);
+              }
+            }}
+          />
+        </div>
+        <div className="dropdown-controls">
+          {value.length > 0 && (
+            <button 
+              className="clear-all" 
+              onClick={handleClear}
+              aria-label="Clear all selections"
+            >
+              Clear All
+            </button>
+          )}
+          <div 
+            className="dropdown-arrow"
+            onClick={() => setIsOpen(!isOpen)}
+          >
+            {isOpen ? '▲' : '▼'}
+          </div>
+        </div>
+      </div>
+      
+          {isOpen && (
+            <div className="dropdown-options">
+              <div 
+                className={`option ${value.length === 0 ? 'selected' : ''}`} 
+                onClick={() => onChange([])}
+              >
+                All Tags
+              </div>
+          {filteredOptions.length > 0 ? (
+            filteredOptions.map(item => (
+              <div 
+                key={item.tag} 
+                className={`option ${value.includes(item.tag) ? 'selected' : ''}`}
+                onClick={() => handleSelect(item.tag)}
+              >
+                <span className="tag-name">{item.tag}</span>
+                <span className="tag-count">{item.count}</span>
+                {value.includes(item.tag) && <span className="checkmark">✓</span>}
+              </div>
+            ))
+          ) : (
+            <div className="no-options">No matching tags</div>
+          )}
+            </div>
+          )}
+    </div>
+  );
 };
 
 // LanguageBar component to display language distribution with tooltip
@@ -137,7 +295,7 @@ function App() {
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [inputValue, setInputValue] = useState<string>('');
   const [selectedLanguage, setSelectedLanguage] = useState<string>('');
-  const [selectedTag, setSelectedTag] = useState<string>('');
+  const [selectedTag, setSelectedTag] = useState<string[]>([]);
 
   // 其他状态使用 jotai atoms（记忆设置）
   const [sortBy, setSortBy] = useAtom(sortByAtom);
@@ -164,7 +322,7 @@ function App() {
     // 清空搜索词，不记忆搜索状态
     setSearchTerm('');
     setSelectedLanguage('');
-    setSelectedTag('');
+    setSelectedTag([]);
   }, [dataUrl, setAtomDataUrl, defaultDataUrl, setSearchTerm, setSelectedLanguage, setSelectedTag]);
 
   // 加载数据
@@ -284,13 +442,84 @@ function App() {
     return Array.from(tagSet).sort();
   }, [repos]);
 
+  // 计算过滤后的标签及其匹配的仓库数量
+  const filteredTagsWithCount = useMemo(() => {
+    // 如果没有选择任何标签或其他筛选条件，则返回所有标签
+    if (selectedLanguage === '' && selectedTag.length === 0 && searchTerm === '') {
+      const tagCount: Record<string, number> = {};
+      repos.forEach(repo => {
+        if (repo.topics) {
+          repo.topics.forEach(topic => {
+            tagCount[topic] = (tagCount[topic] || 0) + 1;
+          });
+        }
+      });
+      
+      return Object.entries(tagCount)
+        .map(([tag, count]) => ({ tag, count }))
+        .sort((a, b) => b.count - a.count);
+    }
+    
+    // 获取当前筛选后的仓库列表
+    let filteredRepos = repos;
+    
+    // 应用语言筛选
+    if (selectedLanguage) {
+      filteredRepos = filteredRepos.filter(repo => repo.language === selectedLanguage);
+    }
+    
+    // 应用标签筛选（必须包含所有已选标签）
+    if (selectedTag.length > 0) {
+      filteredRepos = filteredRepos.filter(repo => 
+        repo.topics && selectedTag.every(tag => repo.topics.includes(tag))
+      );
+    }
+    
+    // 应用搜索词筛选
+    if (searchTerm && searchIndex) {
+      const searchResults = searchIndex.search(searchTerm, {
+        filter: (result) => {
+          // 语言过滤
+          if (selectedLanguage && result.language !== selectedLanguage) {
+            return false;
+          }
+          // 标签过滤
+          if (selectedTag && (!result.topics || !result.topics.includes(selectedTag))) {
+            return false;
+          }
+          return true;
+        }
+      });
+      
+      filteredRepos = searchResults.map(result => {
+        const repo = repos.find(r => r.id === result.id);
+        return repo;
+      }).filter((repo): repo is Repository => repo !== undefined);
+    }
+    
+    // 计算这些仓库中的标签及其数量
+    const tagCount: Record<string, number> = {};
+    filteredRepos.forEach(repo => {
+      if (repo.topics) {
+        repo.topics.forEach(topic => {
+          tagCount[topic] = (tagCount[topic] || 0) + 1;
+        });
+      }
+    });
+    
+    return Object.entries(tagCount)
+      .map(([tag, count]) => ({ tag, count }))
+      .sort((a, b) => b.count - a.count);
+  }, [repos, selectedLanguage, selectedTag, searchTerm, searchIndex]);
+
   // 过滤和排序数据
   const filteredAndSortedRepos = useMemo(() => {
     let result: Repository[] = [];
+    let searchResults: any[] = []; // 用于保存搜索结果以获取评分
 
     // 使用 MiniSearch 进行搜索
     if (searchTerm && searchIndex) {
-      const searchResults = searchIndex.search(searchTerm, {
+      searchResults = searchIndex.search(searchTerm, {
         filter: (result) => {
           // 语言过滤
           if (selectedLanguage && result.language !== selectedLanguage) {
@@ -317,39 +546,47 @@ function App() {
           !selectedLanguage ||
           repo.language === selectedLanguage;
 
-        // 标签过滤
-        const matchesTag =
-          !selectedTag ||
-          (repo.topics && repo.topics.includes(selectedTag));
+        // 标签过滤 - 仓库必须包含所有选中的标签
+        const matchesTags = 
+          selectedTag.length === 0 || 
+          (repo.topics && selectedTag.every(tag => repo.topics.includes(tag)));
 
-        return matchesLanguage && matchesTag;
+        return matchesLanguage && matchesTags;
       });
     }
 
     // 排序
     result.sort((a, b) => {
       let comparison = 0;
-      switch (sortBy) {
-        case 'stars':
-          comparison = b.stargazers_count - a.stargazers_count;
-          break;
-        case 'forks':
-          comparison = b.forks_count - a.forks_count;
-          break;
-        case 'updated':
-          comparison = new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime();
-          break;
-        case 'created':
-          comparison = new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-          break;
-        case 'starred':
-          comparison = new Date(b.starred_at).getTime() - new Date(a.starred_at).getTime();
-          break;
-        case 'name':
-          comparison = a.name.localeCompare(b.name);
-          break;
-        default:
-          comparison = 0;
+      
+      // 如果是按相关性排序且有搜索词，使用搜索评分
+      if (sortBy === 'relevance' && searchTerm && searchResults.length > 0) {
+        const scoreA = searchResults.find(r => r.id === a.id)?.score || 0;
+        const scoreB = searchResults.find(r => r.id === b.id)?.score || 0;
+        comparison = scoreB - scoreA; // 评分高的排在前面
+      } else {
+        switch (sortBy) {
+          case 'stars':
+            comparison = b.stargazers_count - a.stargazers_count;
+            break;
+          case 'forks':
+            comparison = b.forks_count - a.forks_count;
+            break;
+          case 'updated':
+            comparison = new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime();
+            break;
+          case 'created':
+            comparison = new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+            break;
+          case 'starred':
+            comparison = new Date(b.starred_at).getTime() - new Date(a.starred_at).getTime();
+            break;
+          case 'name':
+            comparison = a.name.localeCompare(b.name);
+            break;
+          default:
+            comparison = 0;
+        }
       }
 
       // 应用排序方向
@@ -501,16 +738,11 @@ function App() {
               ))}
             </select>
 
-            <select
+            <TagFilterDropdown
               value={selectedTag}
-              onChange={(e) => setSelectedTag(e.target.value)}
-              className="filter-select"
-            >
-              <option value="">All Tags</option>
-              {allTags.map(tag => (
-                <option key={tag} value={tag}>{tag}</option>
-              ))}
-            </select>
+              onChange={setSelectedTag}
+              options={filteredTagsWithCount.map(({ tag, count }) => ({ tag, count }))}
+            />
 
             <select
               value={sortBy}
@@ -523,6 +755,7 @@ function App() {
               <option value="created">Sort by Created</option>
               <option value="starred">Sort by Starred</option>
               <option value="name">Sort by Name</option>
+              <option value="relevance">Sort by Relevance</option>
             </select>
 
             <select
