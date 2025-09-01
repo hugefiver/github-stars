@@ -19,7 +19,7 @@
   "dependencies": {
     "@octokit/rest": "^22.0.0",
     "dotenv": "^17.2.1",
-    "jotai": "^2.12.5",
+    "jotai": "^2.13.1",
     "minisearch": "^7.1.2",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
@@ -27,11 +27,11 @@
   "devDependencies": {
     "@graphql-codegen/cli": "^5.0.7",
     "@graphql-codegen/typescript": "^4.1.6",
-    "@types/react": "^18.3.23",
+    "@types/react": "^18.3.24",
     "@types/react-dom": "^18.3.7",
     "@vitejs/plugin-react": "^4.7.0",
-    "sass": "^1.89.2",
-    "typescript": "^5.0.0",
-    "vite": "^7.0.6"
+    "sass": "^1.91.0",
+    "typescript": "^5.9.2",
+    "vite": "^7.1.4"
   }
 }

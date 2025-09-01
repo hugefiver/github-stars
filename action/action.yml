@@ -18,6 +18,10 @@ inputs:
     description: 'Path to save the simplified starred repositories data'
     required: false
     default: './starred-repos-simple.json'
+  batch-size:
+    description: 'Number of repositories to fetch per API call (max 100)'
+    required: false
+    default: '70'
 
 outputs:
   repositories-count:

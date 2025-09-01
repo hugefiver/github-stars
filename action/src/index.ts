@@ -42,7 +42,7 @@ interface SimplifiedRepository {
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 // 硬编码的请求大小设置
-const initialRequestSize = 70;  // 初始请求大小
+let initialRequestSize = 70;  // 初始请求大小
 const minRequestSize = 1;         // 最小请求大小
 let currentRequestSize = initialRequestSize;  // 当前请求大小
 
@@ -194,6 +194,9 @@ async function run() {
   const username = core.getInput('username');
   const outputFile = core.getInput('output-file');
   const simpleOutputFile = core.getInput('simple-output-file');
+  const batchSizeInput = parseInt(core.getInput('batch-size'));
+
+  initialRequestSize = Math.min(Math.max(batchSizeInput, 10), 100); // 限制在1到100之间
 
   // 声明variables变量以便在catch块中访问
   let variables: { username: string; cursor: string | null; requestSize: number } = { username: '', cursor: null, requestSize: initialRequestSize };
