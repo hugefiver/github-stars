@@ -35,6 +35,22 @@ $focus-shadow: 0 0 0 3px rgba(3, 102, 214, 0.3);
     color: $secondary-text-color;
     font-size: 1.1em;
   }
+
+  .badges {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin: 15px 0;
+  }
+
+  .badges a {
+    display: inline-block;
+    text-decoration: none;
+  }
+
+  .badges img {
+    display: block;
+  }
 }
 
 // Settings button

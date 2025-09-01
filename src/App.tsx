@@ -361,6 +361,14 @@ function App() {
     <div className="app">
       <header className="header">
         <h1>GitHub Stars Search</h1>
+        <div className="badges">
+          <a href="https://github.com/hugefiver" target="_blank" rel="noopener noreferrer">
+            <img src="https://img.shields.io/badge/Author-hugefiver-blue" alt="Author" />
+          </a>
+          <a href="https://github.com/hugefiver/github-stars" target="_blank" rel="noopener noreferrer">
+            <img src="https://img.shields.io/github/stars/hugefiver/github-stars?style=social" alt="GitHub Stars" />
+          </a>
+        </div>
         <p>Browse and search your starred repositories</p>
         <button className="settings-button" onClick={() => setShowSettings(true)}>
           ⚙️ Settings
