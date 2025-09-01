@@ -9,7 +9,7 @@ on:
       batch-size:
         description: 'Number of repositories to fetch per API call (max 100)'
         required: false
-        default: '70'
+        default: '50'
   push:
     branches:
       - master
@@ -40,7 +40,7 @@ jobs:
           output-file: ./docs/data/starred-repos.json
           # 在生产环境中也会生成简化版本文件（包含languages字段）
           simple-output-file: ./docs/data/starred-repos-simple.json
-          batch-size: ${{ github.event.inputs.batch-size || '70' }}
+          batch-size: ${{ github.event.inputs.batch-size || '50' }}
           
       - name: Upload data as artifact
         uses: actions/upload-artifact@v4
