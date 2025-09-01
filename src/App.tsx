@@ -48,6 +48,7 @@ function App() {
   
   // 搜索和过滤状态使用 useState（不记忆）
   const [searchTerm, setSearchTerm] = useState<string>('');
+  const [inputValue, setInputValue] = useState<string>('');
   const [selectedLanguage, setSelectedLanguage] = useState<string>('');
   const [selectedTag, setSelectedTag] = useState<string>('');
   
@@ -127,17 +128,6 @@ function App() {
     fetchData(dataUrl);
   }, [dataUrl]);
 
-  // 获取所有语言
-  const languages = useMemo(() => {
-    const langSet = new Set<string>();
-    repos.forEach(repo => {
-      if (repo.language) {
-        langSet.add(repo.language);
-      }
-    });
-    return Array.from(langSet).sort();
-  }, [repos]);
-
   // 计算语言比例
   const languageStats = useMemo((): LanguageStats => {
     const langCount: Record<string, number> = {};
@@ -165,6 +155,14 @@ function App() {
       noLanguageCount: repos.length - totalWithLanguage
     };
   }, [repos]);
+
+  // 获取所有语言
+  const languages = useMemo(() => {
+    const allLanguages = Array.from(new Set(repos.map(repo => repo.language).filter((lang): lang is string => lang !== null)));
+    const top20 = languageStats.stats.slice(0, 20).map(stat => stat.language);
+    const rest = allLanguages.filter(lang => !top20.includes(lang)).sort();
+    return [...top20, ...rest];
+  }, [repos, languageStats]);
 
   // 获取所有标签
   const allTags = useMemo(() => {
@@ -259,6 +257,14 @@ function App() {
     return filteredAndSortedRepos.slice(0, displayedCount);
   }, [filteredAndSortedRepos, displayedCount]);
 
+  // 搜索输入防抖
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setSearchTerm(inputValue);
+    }, 300);
+    return () => clearTimeout(handler);
+  }, [inputValue]);
+
   // 重置显示数量
   useEffect(() => {
     setDisplayedCount(itemsPerLoad);
@@ -349,8 +355,8 @@ function App() {
             <input
               type="text"
               placeholder="Search repositories..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              value={inputValue}
+              onChange={(e) => setInputValue(e.target.value)}
               className="search-input"
             />
           </div>
@@ -471,24 +477,59 @@ function App() {
                           <h4>Languages</h4>
                           <div className="repo-language-bar-container">
                             <div className="repo-language-bar-segmented">
-                              {Object.entries(repo.languages)
-                                .sort(([,a], [,b]) => parseFloat(b.percentage) - parseFloat(a.percentage))
-                                .map(([language, data]) => (
-                                  parseFloat(data.percentage) >= 0.5 && (
+                              {(() => {
+                                const mainLanguages: [string, { bytes: number; percentage: string }][] = [];
+                                const otherLanguages: [string, { bytes: number; percentage: string }][] = [];
+                                let otherTotal = 0;
+                                Object.entries(repo.languages).forEach(([lang, data]) => {
+                                  const percentage = parseFloat(data.percentage);
+                                  if (percentage >= 10) {
+                                    mainLanguages.push([lang, data]);
+                                  } else {
+                                    otherLanguages.push([lang, data]);
+                                    otherTotal += percentage;
+                                  }
+                                });
+                                mainLanguages.sort((a, b) => parseFloat(b[1].percentage) - parseFloat(a[1].percentage));
+                                
+                                return [
+                                  ...mainLanguages.map(([language, data]) => (
                                     <div
                                       key={`${repo.id}-${language}-segment`}
                                       className={`repo-language-segment lang-${language.replace(/[^a-zA-Z0-9]/g, '_')}`}
                                       style={{ width: `${data.percentage}%` }}
                                       title={`${language}: ${data.percentage}%`}
                                     ></div>
+                                  )),
+                                  otherTotal > 0 && (
+                                    <div
+                                      key={`${repo.id}-other-segment`}
+                                      className="repo-language-segment lang-Other"
+                                      style={{ width: `${otherTotal}%` }}
+                                      title={otherLanguages.map(([lang, data]) => `${lang}: ${data.percentage}%`).join('\n')}
+                                    ></div>
                                   )
-                                ))}
+                                ].filter(Boolean);
+                              })()}
                             </div>
                             <div className="repo-language-bar-labels">
-                              {Object.entries(repo.languages)
-                                .sort(([,a], [,b]) => parseFloat(b.percentage) - parseFloat(a.percentage))
-                                .map(([language, data]) => (
-                                  parseFloat(data.percentage) >= 0.5 && (
+                              {(() => {
+                                const mainLanguages: [string, { bytes: number; percentage: string }][] = [];
+                                const otherLanguages: [string, { bytes: number; percentage: string }][] = [];
+                                let otherTotal = 0;
+                                Object.entries(repo.languages).forEach(([lang, data]) => {
+                                  const percentage = parseFloat(data.percentage);
+                                  if (percentage >= 10) {
+                                    mainLanguages.push([lang, data]);
+                                  } else {
+                                    otherLanguages.push([lang, data]);
+                                    otherTotal += percentage;
+                                  }
+                                });
+                                mainLanguages.sort((a, b) => parseFloat(b[1].percentage) - parseFloat(a[1].percentage));
+                                
+                                return [
+                                  ...mainLanguages.map(([language, data]) => (
                                     <span
                                       key={`${repo.id}-${language}`}
                                       className="repo-language-label"
@@ -496,8 +537,18 @@ function App() {
                                     >
                                       {language}
                                     </span>
+                                  )),
+                                  otherTotal > 0 && (
+                                    <span
+                                      key={`${repo.id}-other`}
+                                      className="repo-language-label"
+                                      style={{ width: `${otherTotal}%` }}
+                                    >
+                                      Other
+                                    </span>
                                   )
-                                ))}
+                                ].filter(Boolean);
+                              })()}
                             </div>
                           </div>
                         </div>
