@@ -45,13 +45,13 @@ function App() {
   const [repos, setRepos] = useState<Repository[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  
+
   // 搜索和过滤状态使用 useState（不记忆）
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [inputValue, setInputValue] = useState<string>('');
   const [selectedLanguage, setSelectedLanguage] = useState<string>('');
   const [selectedTag, setSelectedTag] = useState<string>('');
-  
+
   // 其他状态使用 jotai atoms（记忆设置）
   const [sortBy, setSortBy] = useAtom(sortByAtom);
   const [sortOrder, setSortOrder] = useAtom(sortOrderAtom);
@@ -61,12 +61,12 @@ function App() {
   const [atomDataUrl, setAtomDataUrl] = useAtom(dataUrlAtom);
   const [displayedCount, setDisplayedCount] = useAtom(displayedCountAtom);
   const [loadingMore, setLoadingMore] = useAtom(loadingMoreAtom);
-  
+
   // MiniSearch 实例
   const [searchIndex, setSearchIndex] = useState<MiniSearch | null>(null);
-  
+
   const itemsPerLoad = 10;
-  
+
   // 在生产环境中使用完整版本，开发环境中使用简化版本
   const defaultDataUrl = import.meta.env.PROD ? './data/starred-repos.json' : './data/starred-repos-simple.json';
   const dataUrl = atomDataUrl || defaultDataUrl;
@@ -169,15 +169,15 @@ function App() {
       totalRepos: repos.length,
       noLanguageCount: repos.length - totalWithLanguage
     };
-  }, [repos]);
+  }, [repos, repos.length]);
 
   // 获取所有语言
   const languages = useMemo(() => {
     // 修正：使用 repo.languages 获取所有出现的语言
-    const allLanguages = Array.from(new Set(repos.flatMap(repo => 
+    const allLanguages = Array.from(new Set(repos.flatMap(repo =>
       repo.languages ? Object.keys(repo.languages) : []
     ).filter((lang): lang is string => lang !== null)));
-    
+
     const top20 = languageStats.stats.slice(0, 20).map(stat => stat.language);
     const rest = allLanguages.filter(lang => !top20.includes(lang)).sort();
     return [...top20, ...rest];
@@ -215,7 +215,7 @@ function App() {
           return true;
         }
       });
-      
+
       // 获取完整的仓库对象
       result = searchResults.map(result => {
         const repo = repos.find(r => r.id === result.id);
@@ -225,15 +225,15 @@ function App() {
       // 如果没有搜索词，使用原始数据进行过滤
       result = repos.filter(repo => {
         // 语言过滤
-        const matchesLanguage = 
+        const matchesLanguage =
           !selectedLanguage ||
           repo.language === selectedLanguage;
-        
+
         // 标签过滤
-        const matchesTag = 
+        const matchesTag =
           !selectedTag ||
           (repo.topics && repo.topics.includes(selectedTag));
-        
+
         return matchesLanguage && matchesTag;
       });
     }
@@ -263,7 +263,7 @@ function App() {
         default:
           comparison = 0;
       }
-      
+
       // 应用排序方向
       return sortOrder === 'desc' ? comparison : -comparison;
     });
@@ -324,12 +324,12 @@ function App() {
     }
     return num.toString();
   };
-  
+
   // 保存设置
   const saveSettings = () => {
     setShowSettings(false);
   };
-  
+
   // 重置设置
   const resetSettings = () => {
     setAtomDataUrl('');
@@ -379,7 +379,7 @@ function App() {
               className="search-input"
             />
           </div>
-          
+
           <div className="filters">
             {/* 全局隐藏详情开关 */}
             <div className="hide-details-toggle">
@@ -393,7 +393,7 @@ function App() {
               </label>
               <span className="toggle-label">Hide All Details</span>
             </div>
-            
+
             <select
               value={selectedLanguage}
               onChange={(e) => setSelectedLanguage(e.target.value)}
@@ -404,7 +404,7 @@ function App() {
                 <option key={lang} value={lang}>{lang}</option>
               ))}
             </select>
-            
+
             <select
               value={selectedTag}
               onChange={(e) => setSelectedTag(e.target.value)}
@@ -415,7 +415,7 @@ function App() {
                 <option key={tag} value={tag}>{tag}</option>
               ))}
             </select>
-            
+
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value)}
@@ -428,7 +428,7 @@ function App() {
               <option value="starred">Sort by Starred</option>
               <option value="name">Sort by Name</option>
             </select>
-            
+
             <select
               value={sortOrder}
               onChange={(e) => setSortOrder(e.target.value)}
@@ -455,7 +455,7 @@ function App() {
             displayedRepos.map(repo => {
               // 如果全局隐藏详情开启，则默认隐藏，但允许单独展开
               // 如果全局隐藏详情关闭，则使用原来的逻辑（默认展开）
-              const isDetailsExpanded = hideAllDetails 
+              const isDetailsExpanded = hideAllDetails
                 ? expandedRepos[repo.id] === true  // 只有明确设置为true才展开
                 : expandedRepos[repo.id] !== false; // 默认展开，除非明确设置为false
               return (
@@ -468,12 +468,12 @@ function App() {
                     </h2>
                     <span className="repo-language">{repo.language}</span>
                   </div>
-                  
+
                   <p className="repo-description">
                     {repo.description || 'No description provided.'}
                   </p>
 
-                  
+
                   {isDetailsExpanded && (
                     <div className="repo-details-section">
                       {/* 上方：Tags 和 Topics */}
@@ -510,7 +510,7 @@ function App() {
                                   }
                                 });
                                 mainLanguages.sort((a, b) => parseFloat(b[1].percentage) - parseFloat(a[1].percentage));
-                                
+
                                 return [
                                   ...mainLanguages.map(([language, data]) => (
                                     <div
@@ -546,7 +546,7 @@ function App() {
                                   }
                                 });
                                 mainLanguages.sort((a, b) => parseFloat(b[1].percentage) - parseFloat(a[1].percentage));
-                                
+
                                 return [
                                   ...mainLanguages.map(([language, data]) => (
                                     <span
@@ -693,7 +693,7 @@ function App() {
                       </div>
                     </div>
                   )}
-                  
+
                   <div className="repo-stats">
                     <span className="stat">
                       <span className="stat-icon">⭐</span>
@@ -727,14 +727,14 @@ function App() {
             <p>Loading more repositories...</p>
           </div>
         )}
-        
+
         {/* 显示是否还有更多数据 */}
         {displayedRepos.length < filteredAndSortedRepos.length && !loadingMore && (
           <div className="load-more-hint">
             <p>Scroll down to load more repositories</p>
           </div>
         )}
-        
+
         {/* 显示已加载所有数据 */}
         {displayedRepos.length >= filteredAndSortedRepos.length && displayedRepos.length > 0 && (
           <div className="all-loaded">
@@ -751,7 +751,7 @@ function App() {
               <h2>Settings</h2>
               <button className="close-button" onClick={() => setShowSettings(false)}>×</button>
             </div>
-            
+
             <div className="modal-body">
               <div className="form-group">
                 <label htmlFor="dataUrl">Data File URL:</label>
@@ -764,12 +764,12 @@ function App() {
                   className="form-input"
                 />
                 <p className="help-text">
-                  Enter the URL to your starred repositories JSON file. 
+                  Enter the URL to your starred repositories JSON file.
                   Default: {defaultDataUrl}
                 </p>
               </div>
             </div>
-            
+
             <div className="modal-footer">
               <button className="reset-button" onClick={resetSettings}>
                 Reset to Default
