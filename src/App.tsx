@@ -68,7 +68,8 @@ function App() {
   const itemsPerLoad = 10;
 
   // 在生产环境中使用完整版本，开发环境中使用简化版本
-  const defaultDataUrl = import.meta.env.PROD ? './data/starred-repos.json' : './data/starred-repos-simple.json';
+  // const defaultDataUrl = import.meta.env.PROD ? './data/starred-repos.json' : './data/starred-repos-simple.json';
+  const defaultDataUrl = './data/starred-repos.json';
   const dataUrl = atomDataUrl || defaultDataUrl;
 
   // 组件挂载时设置默认值
