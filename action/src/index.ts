@@ -197,6 +197,7 @@ async function run() {
   const batchSizeInput = parseInt(core.getInput('batch-size'));
 
   initialRequestSize = Math.min(Math.max(batchSizeInput, 10), 100); // 限制在1到100之间
+  currentRequestSize = initialRequestSize;
 
   // 声明variables变量以便在catch块中访问
   let variables: { username: string; cursor: string | null; requestSize: number } = { username: '', cursor: null, requestSize: initialRequestSize };

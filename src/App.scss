@@ -294,7 +294,28 @@ input:checked + .toggle-slider:before {
 
 // Repository languages compact
 .repo-languages-compact {
-  // Styles for the language list section
+  position: relative; // 使浮窗能相对定位
+  
+  .language-tooltip {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    background: #333;
+    color: #fff;
+    padding: 8px;
+    border-radius: 4px;
+    font-size: 0.8em;
+    z-index: 10;
+    white-space: nowrap;
+    margin-top: 4px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    max-height: 200px;
+    overflow-y: auto;
+
+    div {
+      margin: 2px 0;
+    }
+  }
 }
 
 // New horizontal language bar styles

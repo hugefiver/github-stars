@@ -41,6 +41,93 @@ const getFundingIcon = (platform: string) => {
   }
 };
 
+// LanguageBar component to display language distribution with tooltip
+const LanguageBar = ({ languages }: { languages: Repository['languages'] }) => {
+  const [isHovered, setIsHovered] = useState(false);
+
+  if (!languages || Object.keys(languages).length === 0) {
+    return null;
+  }
+
+  // Separate main languages (>=10%) and other languages (<10%)
+  const mainLanguages: [string, { bytes: number; percentage: string }][] = [];
+  const otherLanguages: [string, { bytes: number; percentage: string }][] = [];
+  let otherTotal = 0;
+
+  Object.entries(languages).forEach(([lang, data]) => {
+    const percentage = parseFloat(data.percentage);
+    if (percentage >= 10) {
+      mainLanguages.push([lang, data]);
+    } else {
+      otherLanguages.push([lang, data]);
+      otherTotal += percentage;
+    }
+  });
+
+  mainLanguages.sort((a, b) => parseFloat(b[1].percentage) - parseFloat(a[1].percentage));
+
+  return (
+    <div 
+      className="repo-languages-compact"
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+    >
+      <h4>Languages</h4>
+      <div className="repo-language-bar-container">
+        <div className="repo-language-bar-segmented">
+          {mainLanguages.map(([language, data]) => (
+            <div
+              key={`segment-${language}`}
+              className={`repo-language-segment lang-${language.replace(/[^a-zA-Z0-9]/g, '_')}`}
+              style={{ width: `${data.percentage}%` }}
+              title={`${language}: ${data.percentage}%`}
+            ></div>
+          ))}
+          {otherTotal > 0 && (
+            <div
+              key="segment-other"
+              className="repo-language-segment lang-Other"
+              style={{ width: `${otherTotal}%` }}
+              title={otherLanguages.map(([lang, data]) => `${lang}: ${data.percentage}%`).join('\n')}
+            ></div>
+          )}
+        </div>
+        <div className="repo-language-bar-labels">
+          {mainLanguages.map(([language, data]) => (
+            <span
+              key={`label-${language}`}
+              className="repo-language-label"
+              style={{ width: `${data.percentage}%` }}
+            >
+              {language}
+            </span>
+          ))}
+          {otherTotal > 0 && (
+            <span
+              key="label-other"
+              className="repo-language-label"
+              style={{ width: `${otherTotal}%` }}
+            >
+              Other
+            </span>
+          )}
+        </div>
+      </div>
+      {isHovered && (
+        <div className="language-tooltip">
+          {Object.entries(languages)
+            .sort((a, b) => parseFloat(b[1].percentage) - parseFloat(a[1].percentage))
+            .map(([lang, data]) => (
+              <div key={lang}>
+                {lang}: {data.percentage}%
+              </div>
+            ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
 function App() {
   const [repos, setRepos] = useState<Repository[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -501,85 +588,7 @@ function App() {
 
                       {/* 下方：语言比例显示 */}
                       {repo.languages && Object.keys(repo.languages).length > 0 && (
-                        <div className="repo-languages-compact">
-                          <h4>Languages</h4>
-                          <div className="repo-language-bar-container">
-                            <div className="repo-language-bar-segmented">
-                              {(() => {
-                                const mainLanguages: [string, { bytes: number; percentage: string }][] = [];
-                                const otherLanguages: [string, { bytes: number; percentage: string }][] = [];
-                                let otherTotal = 0;
-                                Object.entries(repo.languages).forEach(([lang, data]) => {
-                                  const percentage = parseFloat(data.percentage);
-                                  if (percentage >= 10) {
-                                    mainLanguages.push([lang, data]);
-                                  } else {
-                                    otherLanguages.push([lang, data]);
-                                    otherTotal += percentage;
-                                  }
-                                });
-                                mainLanguages.sort((a, b) => parseFloat(b[1].percentage) - parseFloat(a[1].percentage));
-
-                                return [
-                                  ...mainLanguages.map(([language, data]) => (
-                                    <div
-                                      key={`${repo.id}-${language}-segment`}
-                                      className={`repo-language-segment lang-${language.replace(/[^a-zA-Z0-9]/g, '_')}`}
-                                      style={{ width: `${data.percentage}%` }}
-                                      title={`${language}: ${data.percentage}%`}
-                                    ></div>
-                                  )),
-                                  otherTotal > 0 && (
-                                    <div
-                                      key={`${repo.id}-other-segment`}
-                                      className="repo-language-segment lang-Other"
-                                      style={{ width: `${otherTotal}%` }}
-                                      title={otherLanguages.map(([lang, data]) => `${lang}: ${data.percentage}%`).join('\n')}
-                                    ></div>
-                                  )
-                                ].filter(Boolean);
-                              })()}
-                            </div>
-                            <div className="repo-language-bar-labels">
-                              {(() => {
-                                const mainLanguages: [string, { bytes: number; percentage: string }][] = [];
-                                const otherLanguages: [string, { bytes: number; percentage: string }][] = [];
-                                let otherTotal = 0;
-                                Object.entries(repo.languages).forEach(([lang, data]) => {
-                                  const percentage = parseFloat(data.percentage);
-                                  if (percentage >= 10) {
-                                    mainLanguages.push([lang, data]);
-                                  } else {
-                                    otherLanguages.push([lang, data]);
-                                    otherTotal += percentage;
-                                  }
-                                });
-                                mainLanguages.sort((a, b) => parseFloat(b[1].percentage) - parseFloat(a[1].percentage));
-
-                                return [
-                                  ...mainLanguages.map(([language, data]) => (
-                                    <span
-                                      key={`${repo.id}-${language}`}
-                                      className="repo-language-label"
-                                      style={{ width: `${data.percentage}%` }}
-                                    >
-                                      {language}
-                                    </span>
-                                  )),
-                                  otherTotal > 0 && (
-                                    <span
-                                      key={`${repo.id}-other`}
-                                      className="repo-language-label"
-                                      style={{ width: `${otherTotal}%` }}
-                                    >
-                                      Other
-                                    </span>
-                                  )
-                                ].filter(Boolean);
-                              })()}
-                            </div>
-                          </div>
-                        </div>
+                        <LanguageBar languages={repo.languages} />
                       )}
                     </div>
                   )}
