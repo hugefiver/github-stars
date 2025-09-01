@@ -134,7 +134,8 @@ function App() {
     let totalWithLanguage = 0;
     
     repos.forEach(repo => {
-      if (repo.language) {
+      // 修正：基于 repo.languages 判断是否有语言数据
+      if (repo.languages && Object.keys(repo.languages).length > 0) {
         totalWithLanguage++;
       }
       // 计算每个仓库中各语言的score
@@ -172,7 +173,11 @@ function App() {
 
   // 获取所有语言
   const languages = useMemo(() => {
-    const allLanguages = Array.from(new Set(repos.map(repo => repo.language).filter((lang): lang is string => lang !== null)));
+    // 修正：使用 repo.languages 获取所有出现的语言
+    const allLanguages = Array.from(new Set(repos.flatMap(repo => 
+      repo.languages ? Object.keys(repo.languages) : []
+    ).filter((lang): lang is string => lang !== null)));
+    
     const top20 = languageStats.stats.slice(0, 20).map(stat => stat.language);
     const rest = allLanguages.filter(lang => !top20.includes(lang)).sort();
     return [...top20, ...rest];
