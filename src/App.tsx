@@ -130,23 +130,37 @@ function App() {
 
   // 计算语言比例
   const languageStats = useMemo((): LanguageStats => {
-    const langCount: Record<string, number> = {};
+    const langScore: Record<string, number> = {};
     let totalWithLanguage = 0;
     
     repos.forEach(repo => {
       if (repo.language) {
-        langCount[repo.language] = (langCount[repo.language] || 0) + 1;
         totalWithLanguage++;
+      }
+      // 计算每个仓库中各语言的score
+      if (repo.languages) {
+        Object.entries(repo.languages).forEach(([language, data]) => {
+          const percentage = parseFloat(data.percentage);
+          let x = 0.1;
+          if (percentage > 80) {
+            x = 1;
+          } else if (percentage > 50) {
+            x = 0.8;
+          } else if (percentage > 30) {
+            x = 0.3;
+          }
+          langScore[language] = (langScore[language] || 0) + x;
+        });
       }
     });
     
-    const stats: LanguageStat[] = Object.entries(langCount)
-      .map(([language, count]) => ({
+    const stats: LanguageStat[] = Object.entries(langScore)
+      .map(([language, score]) => ({
         language,
-        count,
-        percentage: totalWithLanguage > 0 ? ((count / totalWithLanguage) * 100).toFixed(1) : '0'
+        count: Math.round(score), // 使用score作为count
+        percentage: score.toFixed(1) // 使用score作为percentage显示
       }))
-      .sort((a, b) => b.count - a.count);
+      .sort((a, b) => parseFloat(b.percentage) - parseFloat(a.percentage));
     
     return {
       stats,
