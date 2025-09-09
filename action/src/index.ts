@@ -108,6 +108,11 @@ async function handleRequestWithRetry(
         throw new Error(`GraphQL errors: ${errorMessage}`);
       }
 
+      // 检查Status Code
+      if (result?.status && result.status !== 200) {
+        throw new Error(`Unexpected response status: ${result.status}`);
+      }
+
       // 如果成功，恢复到初始请求大小（如果之前被递减了）
       if (currentSize < initialRequestSize) {
         currentRequestSize = initialRequestSize;
