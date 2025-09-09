@@ -47,6 +47,8 @@ async function handleRequestWithRetry(
 
       // 如果成功，恢复到初始请求大小（如果之前被递减了）
       if (currentSize < initialRequestSize) {
+        currentSize = initialRequestSize;
+        variables.requestSize = currentSize;
         console.log(`请求成功，恢复请求大小至 ${initialRequestSize}`);
       }
 
@@ -232,6 +234,11 @@ export async function processStarredRepositories(config: Config): Promise<void> 
               })) || [],
             pushedAt: repo.pushedAt ?? null
           });
+        }
+
+        if (currentRequestSize < initialRequestSize) {
+          currentRequestSize = initialRequestSize;
+          console.log(`请求成功，恢复请求大小至 ${initialRequestSize}`);
         }
 
         console.log(`Processed ${edges?.length} repositories, total: ${processedRepos.length}/${totalCount}`);
