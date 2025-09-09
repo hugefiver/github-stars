@@ -103,7 +103,7 @@ async function handleRequestWithRetry(
       });
 
       // 检查GraphQL错误
-      if (result && result.errors && result.errors.length > 0) {
+      if (result?.errors && result.errors.length > 0) {
         const errorMessage = result.errors.map((e: any) => e.message).join('; ');
         throw new Error(`GraphQL errors: ${errorMessage}`);
       }
@@ -140,6 +140,14 @@ async function handleRequestWithRetry(
       console.log(`- 请求大小: ${variables.requestSize}`);
       console.log(`递减请求大小至 ${currentSize} (重试 ${retryCount}/${maxRetries})`);
 
+      // 在重试前等待指定的时间：5s, 10s, 30s
+      const retryDelays = [5000, 10000, 30000]; // 5s, 10s, 30s
+      if (retryCount <= retryDelays.length) {
+        const delayTime = retryDelays[retryCount - 1] || 5000; // 默认5s
+        console.log(`等待 ${delayTime/1000} 秒后重试...`);
+        await delay(delayTime);
+      }
+
       if (retryCount >= maxRetries || currentSize === minRequestSize) {
         console.log(`达到最大重试次数或最小请求大小，跳过此批次`);
         throw error;
@@ -158,7 +166,7 @@ const handleRateLimit = async (graphqlWithAuth: any, fn: () => Promise<any>, max
       const result = await fn();
 
       // Check if the result has headers (for successful responses)
-      if (result && result.headers) {
+      if (result?.headers) {
         await checkRateLimitHeaders(result.headers, retryCount);
       }
 
@@ -375,7 +383,7 @@ async function run() {
             const langEdges = repo.languages.edges;
             if (langEdges) {
               for (const langEdge of langEdges) {
-                if (!langEdge || !langEdge.node) {
+                if (!langEdge?.node) {
                   console.warn('Skipping empty language edge');
                   continue;
                 }

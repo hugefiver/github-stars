@@ -24,7 +24,7 @@
     "@octokit/rest": "^22.0.0"
   },
   "devDependencies": {
-    "@types/node": "^20.19.11",
+    "@types/node": "^20.19.13",
     "@vercel/ncc": "^0.38.3",
     "ts-node": "^10.9.2",
     "typescript": "^5.9.2"
