@@ -9,13 +9,9 @@ async function buildAction(): Promise<void> {
       fs.mkdirSync('dist');
     }
 
-    // 使用tsc编译TypeScript
-    console.log('Compiling TypeScript...');
-    execSync('npx tsc --project .', { stdio: 'inherit' });
-
-    // 使用ncc打包
+    // 使用ncc直接打包TypeScript文件（推荐方式）
     console.log('Bundling with ncc...');
-    execSync('ncc build index.ts -o dist', { stdio: 'inherit' });
+    execSync('ncc build src/index.ts -o dist --minify', { stdio: 'inherit' });
 
     console.log('Action built successfully');
   } catch (error) {
