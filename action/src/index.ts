@@ -354,7 +354,7 @@ async function run() {
         ) as GraphQLResponse;
 
         // 检查响应中是否存在user字段
-        if (!response.user) {
+        if (!response || !response.user) {
           throw new Error('GraphQL response missing user data');
         }
 
@@ -482,14 +482,23 @@ async function run() {
       } catch (error) {
         // 如果重试后仍然失败，尝试跳过当前批次继续
         console.log(`当前批次请求失败，尝试继续下一页`);
+        console.error('Error details:', error);
 
-        // 这里可以实现更智能的跳过逻辑，比如：
-        // 1. 尝试将 cursor 前移一定数量
-        // 2. 或者直接跳到下一页（如果可能）
-        // 3. 或者终止整个流程
-
-        // 为了简单起见，我们先终止整个流程
-        throw error;
+        // 尝试跳过当前批次，继续处理下一页
+        // 如果有cursor，继续使用当前cursor，否则尝试手动推进
+        if (cursor) {
+          console.log(`保持当前cursor继续: ${cursor}`);
+        } else {
+          console.log('警告: 无法确定下一批次位置，可能需要手动处理');
+        }
+        
+        // 减小请求大小再次尝试
+        currentRequestSize = Math.max(minRequestSize, Math.floor(currentRequestSize / 2));
+        console.log(`减小请求大小至: ${currentRequestSize}`);
+        
+        // 继续下一次循环而不是终止整个流程
+        await delay(5000); // 等待5秒后继续
+        continue;
       }
     }
 
