@@ -483,9 +483,12 @@ function App() {
           if (selectedLanguage && result.language !== selectedLanguage) {
             return false;
           }
-          // 标签过滤
-          if (selectedTag && (!result.topics || !result.topics.includes(selectedTag))) {
-            return false;
+          // 标签过滤 - 仓库必须包含所有选中的标签
+          if (selectedTag.length > 0) {
+            if (!result.topics) return false;
+            if (!selectedTag.every(tag => result.topics.includes(tag))) {
+              return false;
+            }
           }
           return true;
         }
@@ -525,9 +528,12 @@ function App() {
           if (selectedLanguage && result.language !== selectedLanguage) {
             return false;
           }
-          // 标签过滤
-          if (selectedTag && (!result.topics || !result.topics.includes(selectedTag))) {
-            return false;
+          // 标签过滤 - 仓库必须包含所有选中的标签
+          if (selectedTag.length > 0) {
+            if (!result.topics) return false;
+            if (!selectedTag.every(tag => result.topics.includes(tag))) {
+              return false;
+            }
           }
           return true;
         }
