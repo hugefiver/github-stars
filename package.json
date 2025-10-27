@@ -18,21 +18,21 @@
   },
   "dependencies": {
     "@octokit/rest": "^22.0.0",
-    "dotenv": "^17.2.1",
-    "flexsearch": "^0.7.31",
-    "jotai": "^2.13.1",
-    "minisearch": "^7.1.2",
+    "dotenv": "^17.2.3",
+    "flexsearch": "^0.7.43",
+    "jotai": "^2.15.0",
+    "minisearch": "^7.2.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },
   "devDependencies": {
     "@graphql-codegen/cli": "^5.0.7",
     "@graphql-codegen/typescript": "^4.1.6",
-    "@types/react": "^18.3.24",
+    "@types/react": "^18.3.26",
     "@types/react-dom": "^18.3.7",
     "@vitejs/plugin-react": "^4.7.0",
-    "sass": "^1.91.0",
-    "typescript": "^5.9.2",
-    "vite": "^7.1.4"
+    "sass": "^1.93.2",
+    "typescript": "^5.9.3",
+    "vite": "^7.1.12"
   }
 }
