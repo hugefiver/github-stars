@@ -308,8 +308,8 @@ function App() {
   const [displayedCount, setDisplayedCount] = useAtom(displayedCountAtom);
   const [loadingMore, setLoadingMore] = useAtom(loadingMoreAtom);
 
-  // Web Worker 实例和状态
-  const [searchWorker, setSearchWorker] = useState<Worker | null>(null);
+  // FlexSearch 实例和状态
+  const [searchIndex, setSearchIndex] = useState<any>(null);
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [isSearching, setIsSearching] = useState<boolean>(false);
   const [searchTime, setSearchTime] = useState<number>(0);
@@ -351,92 +351,164 @@ function App() {
     }
   };
 
-  // 初始化搜索 Worker
+  // 初始化 FlexSearch 索引
   useEffect(() => {
-    const worker = new Worker(new URL('./search.worker.ts', import.meta.url), { type: 'module' });
-    setSearchWorker(worker);
-  
-    worker.onmessage = (e) => {
-      const { type, payload } = e.data;
-      switch (type) {
-        case 'INITIALIZED':
-          console.log('Search worker initialized');
-          // 在初始化完成后构建索引
-          if (repos.length > 0) {
-            worker.postMessage({
-              type: 'BUILD_INDEX',
-              payload: { repositories: repos }
-            });
-          }
-          break;
-        case 'INDEX_BUILT':
-          console.log('Search index built with', payload.count, 'repositories');
-          break;
-        case 'SEARCH_RESULTS':
-          const endTime = performance.now();
-          setSearchResults(payload.results);
-          setIsSearching(false);
-          setSearchTime(endTime - startTimeRef.current);
-          break;
-        case 'ERROR':
-          console.error('Search worker error:', payload.error);
-          setIsSearching(false);
-          setSearchError(`Search error: ${payload.error}`);
-          break;
+    const initializeSearch = async () => {
+      try {
+        const flexsearchModule = await import('flexsearch');
+        const FlexSearch = flexsearchModule.default || flexsearchModule;
+        
+        // 创建搜索索引配置，启用内置 worker 模式
+        const indexConfig: any = {
+          id: 'id',
+          index: [
+            {
+              field: 'name',
+              store: true,
+              boost: 2
+            },
+            {
+              field: 'full_name',
+              store: true,
+              boost: 2
+            },
+            {
+              field: 'description',
+              store: true,
+              boost: 1
+            },
+            {
+              field: 'language',
+              store: true,
+              boost: 1
+            },
+            {
+              field: 'topics',
+              store: true,
+              boost: 1.5,
+              split: /\W+/  // 处理 topics 数组
+            }
+          ],
+          // 启用 worker 模式以提升性能
+          worker: true,
+          preset: 'score',
+          tokenize: 'forward',
+          optimize: true
+        };
+        
+        const index = new FlexSearch.Index(indexConfig);
+        setSearchIndex(index);
+        
+        // 如果已有数据，立即构建索引
+        if (repos.length > 0) {
+          buildIndex(index, repos);
+        }
+      } catch (error) {
+        console.error('Error initializing search:', error);
+        setSearchError('Failed to initialize search');
       }
     };
-  
-    // 初始化 worker
-    worker.postMessage({ type: 'INITIALIZE', payload: {} });
-  
-    return () => {
-      worker.terminate();
-    };
+    
+    initializeSearch();
   }, []);
+  
+  // 构建搜索索引的辅助函数
+  const buildIndex = (index: any, repositories: Repository[]) => {
+    // 清空现有索引
+    index.clear();
+    
+    // 批量添加数据到索引
+    repositories.forEach((repo: Repository) => {
+      const doc = {
+        id: repo.id,
+        name: String(repo.name || ''),
+        full_name: String(repo.full_name || ''),
+        description: String(repo.description || ''),
+        language: String(repo.language || ''),
+        topics: Array.isArray(repo.topics) ? repo.topics.join(' ') : ''
+      };
+      
+      index.add(doc.id, doc);
+    });
+  };
   
   // 当数据加载完成后，构建搜索索引
   useEffect(() => {
-    if (searchWorker && repos.length > 0) {
-      // 只有在 worker 已经初始化的情况下才发送 BUILD_INDEX 消息
-      searchWorker.postMessage({
-        type: 'BUILD_INDEX',
-        payload: { repositories: repos }
-      });
+    if (searchIndex && repos.length > 0) {
+      buildIndex(searchIndex, repos);
     }
-  }, [repos, searchWorker]);
+  }, [repos, searchIndex]);
   
   // 当数据 URL 变化时，重新构建索引
   useEffect(() => {
-    if (searchWorker && repos.length > 0) {
-      searchWorker.postMessage({
-        type: 'UPDATE_DATA',
-        payload: { repositories: repos }
-      });
+    if (searchIndex && repos.length > 0) {
+      buildIndex(searchIndex, repos);
     }
-  }, [dataUrl, searchWorker, repos]);
-
+  }, [dataUrl, repos, searchIndex]);
+  
   // 记录搜索开始时间的 ref
   const startTimeRef = useRef<number>(0);
 
-  // 当数据加载完成后，构建搜索索引
+  // 搜索输入防抖
   useEffect(() => {
-    if (searchWorker && repos.length > 0) {
-      searchWorker.postMessage({
-        type: 'BUILD_INDEX',
-        payload: { repositories: repos }
-      });
-    }
-  }, [repos, searchWorker]);
-
-  // 当数据 URL 变化时，重新构建索引
-  useEffect(() => {
-    if (searchWorker && repos.length > 0) {
-      searchWorker.postMessage({
-        type: 'UPDATE_DATA',
-        payload: { repositories: repos }
-      });
-    }
-  }, [dataUrl, searchWorker, repos]);
+    const handler = setTimeout(async () => {
+      if (searchIndex && inputValue.trim()) {
+        setIsSearching(true);
+        setSearchError(null);
+        startTimeRef.current = performance.now();
+        
+        try {
+          // 执行搜索
+          const results = searchIndex.search(inputValue.trim(), {
+            limit: 100,
+            suggest: true
+          });
+          
+          // 处理搜索结果
+          let processedResults: any[] = [];
+          
+          if (Array.isArray(results)) {
+            processedResults = results
+              .flatMap((result: any) => {
+                if (result && Array.isArray(result.result)) {
+                  return result.result;
+                } else if (Array.isArray(result)) {
+                  return result;
+                } else {
+                  return [];
+                }
+              })
+              .map((id: number) => {
+                const doc = searchIndex.get(id);
+                return {
+                  id: doc.id,
+                  name: doc.name,
+                  full_name: doc.full_name,
+                  description: doc.description,
+                  language: doc.language,
+                  topics: doc.topics ? doc.topics.split(' ') : [],
+                  score: 1
+                };
+              });
+          }
+          
+          const endTime = performance.now();
+          setSearchResults(processedResults);
+          setIsSearching(false);
+          setSearchTime(endTime - startTimeRef.current);
+        } catch (error) {
+          console.error('Search error:', error);
+          setIsSearching(false);
+          setSearchError('Search failed');
+        }
+      } else {
+        setSearchResults([]);
+        setIsSearching(false);
+      }
+    }, 300);
+    
+    return () => clearTimeout(handler);
+  }, [inputValue, searchIndex]);
 
   // 初始加载数据
   useEffect(() => {
@@ -642,22 +714,64 @@ function App() {
 
   // 搜索输入防抖
   useEffect(() => {
-    const handler = setTimeout(() => {
-      if (searchWorker && inputValue.trim()) {
+    const handler = setTimeout(async () => {
+      if (searchIndex && inputValue.trim()) {
         setIsSearching(true);
         setSearchError(null);
         startTimeRef.current = performance.now();
-        searchWorker.postMessage({
-          type: 'SEARCH',
-          payload: { query: inputValue.trim(), limit: 100 }
-        });
+        
+        try {
+          // 执行搜索
+          const results = await searchIndex.search(inputValue.trim(), {
+            limit: 100,
+            suggest: true
+          });
+          
+          // 处理搜索结果
+          let processedResults: any[] = [];
+          
+          if (Array.isArray(results)) {
+            processedResults = results
+              .flatMap((result: any) => {
+                if (result && Array.isArray(result.result)) {
+                  return result.result;
+                } else if (Array.isArray(result)) {
+                  return result;
+                } else {
+                  return [];
+                }
+              })
+              .map((id: number) => {
+                const doc = searchIndex.get(id);
+                return {
+                  id: doc.id,
+                  name: doc.name,
+                  full_name: doc.full_name,
+                  description: doc.description,
+                  language: doc.language,
+                  topics: doc.topics ? doc.topics.split(' ') : [],
+                  score: 1
+                };
+              });
+          }
+          
+          const endTime = performance.now();
+          setSearchResults(processedResults);
+          setIsSearching(false);
+          setSearchTime(endTime - startTimeRef.current);
+        } catch (error) {
+          console.error('Search error:', error);
+          setIsSearching(false);
+          setSearchError('Search failed');
+        }
       } else {
         setSearchResults([]);
         setIsSearching(false);
       }
     }, 300);
+    
     return () => clearTimeout(handler);
-  }, [inputValue, searchWorker]);
+  }, [inputValue, searchIndex]);
 
   // 重置显示数量
   useEffect(() => {
