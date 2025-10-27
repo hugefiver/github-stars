@@ -12,7 +12,10 @@
     "sortBy": "排序方式",
     "sortOrder": "排序顺序",
     "hideDetails": "隐藏所有详情",
-    "clearAll": "清除全部"
+    "clearAll": "清除全部",
+    "placeholder": "按标签筛选...",
+    "allTags": "所有标签",
+    "noMatchingTags": "无匹配标签"
   },
   "sortOptions": {
     "stars": "星标数",
@@ -31,13 +34,15 @@
     "topics": "话题",
     "languages": "语言",
     "info": {
+      "title": "仓库信息",
       "primaryLanguage": "主要语言：",
       "license": "许可证：",
       "status": "状态：",
       "parent": "父仓库：",
       "latestRelease": "最新发布：",
       "mirrorUrl": "镜像地址：",
-      "lastPushed": "最后推送："
+      "lastPushed": "最后推送：",
+      "other": "其他"
     },
     "funding": "资助",
     "packages": "包",
@@ -63,7 +68,8 @@
     "dataUrl": "数据文件URL：",
     "default": "默认：",
     "reset": "重置为默认",
-    "save": "保存更改"
+    "save": "保存更改",
+    "enterUrl": "输入您的星标仓库JSON文件的URL。"
   },
   "status": {
     "archived": "📦 已归档",

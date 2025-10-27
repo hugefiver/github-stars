@@ -12,7 +12,10 @@
     "sortBy": "並び替え",
     "sortOrder": "順序",
     "hideDetails": "すべての詳細を非表示",
-    "clearAll": "すべてクリア"
+    "clearAll": "すべてクリア",
+    "placeholder": "タグでフィルター...",
+    "allTags": "すべてのタグ",
+    "noMatchingTags": "一致するタグがありません"
   },
   "sortOptions": {
     "stars": "スター数",
@@ -31,13 +34,15 @@
     "topics": "トピック",
     "languages": "言語",
     "info": {
+      "title": "リポジトリ情報",
       "primaryLanguage": "主要言語：",
       "license": "ライセンス：",
       "status": "ステータス：",
       "parent": "親リポジトリ：",
       "latestRelease": "最新リリース：",
       "mirrorUrl": "ミラーURL：",
-      "lastPushed": "最終プッシュ："
+      "lastPushed": "最終プッシュ：",
+      "other": "その他"
     },
     "funding": "資金調達",
     "packages": "パッケージ",
@@ -63,7 +68,8 @@
     "dataUrl": "データファイルURL：",
     "default": "デフォルト：",
     "reset": "デフォルトにリセット",
-    "save": "変更を保存"
+    "save": "変更を保存",
+    "enterUrl": "スター付きリポジトリのJSONファイルのURLを入力してください。"
   },
   "status": {
     "archived": "📦 アーカイブ済み",

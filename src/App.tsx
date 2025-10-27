@@ -46,250 +46,7 @@ const getFundingIcon = (platform: string) => {
   }
 };
 
-// TagFilterDropdown component for multi-select tag filtering with search
-const TagFilterDropdown = ({ 
-  value, 
-  onChange, 
-  options 
-}: { 
-  value: string[]; 
-  onChange: (tags: string[]) => void; 
-  options: { tag: string; count: number }[] 
-}) => {
-  const [isOpen, setIsOpen] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
-  const wrapperRef = useRef<HTMLDivElement>(null);
-  const debounceTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // 防抖处理
-  useEffect(() => {
-    if (debounceTimeoutRef.current) {
-      clearTimeout(debounceTimeoutRef.current);
-    }
-    
-    debounceTimeoutRef.current = setTimeout(() => {
-      setDebouncedSearchTerm(searchTerm);
-    }, 300); // 300ms 防抖延迟
-
-    return () => {
-      if (debounceTimeoutRef.current) {
-        clearTimeout(debounceTimeoutRef.current);
-      }
-    };
-  }, [searchTerm]);
-
-  // 点击外部关闭下拉
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (wrapperRef.current && !wrapperRef.current.contains(event.target as Node)) {
-        setIsOpen(false);
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
-  // 过滤选项
-  const filteredOptions = useMemo(() => {
-    if (!debouncedSearchTerm.trim()) return options;
-    return options.filter(option => 
-      option.tag.toLowerCase().includes(debouncedSearchTerm.toLowerCase())
-    );
-  }, [options, debouncedSearchTerm]);
-
-  const handleSelect = (tag: string) => {
-    const newTags = value.includes(tag)
-      ? value.filter(t => t !== tag)
-      : [...value, tag];
-    onChange(newTags);
-    setSearchTerm('');
-  };
-
-  const handleClear = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    onChange([]);
-    setSearchTerm('');
-  };
-
-  const handleClearTag = (e: React.MouseEvent, tag: string) => {
-    e.stopPropagation();
-    e.preventDefault();
-    onChange(value.filter(t => t !== tag));
-  };
-
-  return (
-    <div className="tag-filter-dropdown multi-select" ref={wrapperRef}>
-      <div 
-        className="dropdown-trigger"
-      >
-        <div className="selected-tags">
-          {value.map(tag => (
-            <div key={tag} className="selected-tag">
-              {tag}
-              <button 
-                className="tag-remove" 
-                onClick={(e) => handleClearTag(e, tag)}
-                aria-label={`Remove ${tag}`}
-              >
-                ×
-              </button>
-            </div>
-          ))}
-          <input
-            type="text"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder={value.length === 0 ? "Filter by tags..." : ""}
-            className="dropdown-input"
-            onFocus={() => setIsOpen(true)}
-            onClick={() => setIsOpen(true)}
-            onKeyDown={(e) => {
-              // 如果输入框为空且按下了退格键，则删除最后一个标签
-              if (e.key === 'Backspace' && searchTerm === '' && value.length > 0) {
-                e.preventDefault();
-                const newTags = [...value];
-                newTags.pop();
-                onChange(newTags);
-              }
-            }}
-          />
-        </div>
-        <div className="dropdown-controls">
-          {value.length > 0 && (
-            <button 
-              className="clear-all" 
-              onClick={handleClear}
-              aria-label="Clear all selections"
-            >
-              Clear All
-            </button>
-          )}
-          <div 
-            className="dropdown-arrow"
-            onClick={() => setIsOpen(!isOpen)}
-          >
-            {isOpen ? '▲' : '▼'}
-          </div>
-        </div>
-      </div>
-      
-          {isOpen && (
-            <div className="dropdown-options">
-              <div 
-                className={`option ${value.length === 0 ? 'selected' : ''}`} 
-                onClick={() => onChange([])}
-              >
-                All Tags
-              </div>
-          {filteredOptions.length > 0 ? (
-            filteredOptions.map(item => (
-              <div 
-                key={item.tag} 
-                className={`option ${value.includes(item.tag) ? 'selected' : ''}`}
-                onClick={() => handleSelect(item.tag)}
-              >
-                <span className="tag-name">{item.tag}</span>
-                <span className="tag-count">{item.count}</span>
-                {value.includes(item.tag) && <span className="checkmark">✓</span>}
-              </div>
-            ))
-          ) : (
-            <div className="no-options">No matching tags</div>
-          )}
-            </div>
-          )}
-    </div>
-  );
-};
-
-// LanguageBar component to display language distribution with tooltip
-const LanguageBar = ({ languages }: { languages: Repository['languages'] }) => {
-  const [isHovered, setIsHovered] = useState(false);
-
-  if (!languages || Object.keys(languages).length === 0) {
-    return null;
-  }
-
-  // Separate main languages (>=10%) and other languages (<10%)
-  const mainLanguages: [string, { bytes: number; percentage: string }][] = [];
-  const otherLanguages: [string, { bytes: number; percentage: string }][] = [];
-  let otherTotal = 0;
-
-  Object.entries(languages).forEach(([lang, data]) => {
-    const percentage = parseFloat(data.percentage);
-    if (percentage >= 10) {
-      mainLanguages.push([lang, data]);
-    } else {
-      otherLanguages.push([lang, data]);
-      otherTotal += percentage;
-    }
-  });
-
-  mainLanguages.sort((a, b) => parseFloat(b[1].percentage) - parseFloat(a[1].percentage));
-
-  return (
-    <div 
-      className="repo-languages-compact"
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-    >
-      <h4>Languages</h4>
-      <div className="repo-language-bar-container">
-        <div className="repo-language-bar-segmented">
-          {mainLanguages.map(([language, data]) => (
-            <div
-              key={`segment-${language}`}
-              className={`repo-language-segment lang-${language.replace(/[^a-zA-Z0-9]/g, '_')}`}
-              style={{ width: `${data.percentage}%` }}
-              title={`${language}: ${data.percentage}%`}
-            ></div>
-          ))}
-          {otherTotal > 0 && (
-            <div
-              key="segment-other"
-              className="repo-language-segment lang-Other"
-              style={{ width: `${otherTotal}%` }}
-              title={otherLanguages.map(([lang, data]) => `${lang}: ${data.percentage}%`).join('\n')}
-            ></div>
-          )}
-        </div>
-        <div className="repo-language-bar-labels">
-          {mainLanguages.map(([language, data]) => (
-            <span
-              key={`label-${language}`}
-              className="repo-language-label"
-              style={{ width: `${data.percentage}%` }}
-            >
-              {language}
-            </span>
-          ))}
-          {otherTotal > 0 && (
-            <span
-              key="label-other"
-              className="repo-language-label"
-              style={{ width: `${otherTotal}%` }}
-            >
-              Other
-            </span>
-          )}
-        </div>
-      </div>
-      {isHovered && (
-        <div className="language-tooltip">
-          {Object.entries(languages)
-            .sort((a, b) => parseFloat(b[1].percentage) - parseFloat(a[1].percentage))
-            .map(([lang, data]) => (
-              <div key={lang}>
-                {lang}: {data.percentage}%
-              </div>
-            ))}
-        </div>
-      )}
-    </div>
-  );
-};
 
 function App() {
   const { t, i18n } = useTranslation();
@@ -321,6 +78,251 @@ function App() {
   const [searchError, setSearchError] = useAtom(searchErrorAtom);
 
   const itemsPerLoad = 10;
+
+  // LanguageBar component to display language distribution with tooltip
+  const LanguageBar = ({ languages }: { languages: Repository['languages'] }) => {
+    const [isHovered, setIsHovered] = useState(false);
+
+    if (!languages || Object.keys(languages).length === 0) {
+      return null;
+    }
+
+    // Separate main languages (>=10%) and other languages (<10%)
+    const mainLanguages: [string, { bytes: number; percentage: string }][] = [];
+    const otherLanguages: [string, { bytes: number; percentage: string }][] = [];
+    let otherTotal = 0;
+
+    Object.entries(languages).forEach(([lang, data]) => {
+      const percentage = parseFloat(data.percentage);
+      if (percentage >= 10) {
+        mainLanguages.push([lang, data]);
+      } else {
+        otherLanguages.push([lang, data]);
+        otherTotal += percentage;
+      }
+    });
+
+    mainLanguages.sort((a, b) => parseFloat(b[1].percentage) - parseFloat(a[1].percentage));
+
+    return (
+      <div
+        className="repo-languages-compact"
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+      >
+        <h4>{t('repo.languages', 'Languages')}</h4>
+        <div className="repo-language-bar-container">
+          <div className="repo-language-bar-segmented">
+            {mainLanguages.map(([language, data]) => (
+              <div
+                key={`segment-${language}`}
+                className={`repo-language-segment lang-${language.replace(/[^a-zA-Z0-9]/g, '_')}`}
+                style={{ width: `${data.percentage}%` }}
+                title={`${language}: ${data.percentage}%`}
+              ></div>
+            ))}
+            {otherTotal > 0 && (
+              <div
+                key="segment-other"
+                className="repo-language-segment lang-Other"
+                style={{ width: `${otherTotal}%` }}
+                title={otherLanguages.map(([lang, data]) => `${lang}: ${data.percentage}%`).join('\n')}
+              ></div>
+            )}
+          </div>
+          <div className="repo-language-bar-labels">
+            {mainLanguages.map(([language, data]) => (
+              <span
+                key={`label-${language}`}
+                className="repo-language-label"
+                style={{ width: `${data.percentage}%` }}
+              >
+                {language}
+              </span>
+            ))}
+            {otherTotal > 0 && (
+              <span
+                key="label-other"
+                className="repo-language-label"
+                style={{ width: `${otherTotal}%` }}
+              >
+                {t('repo.info.other', 'Other')}
+              </span>
+            )}
+          </div>
+        </div>
+        {isHovered && (
+          <div className="language-tooltip">
+            {Object.entries(languages)
+              .sort((a, b) => parseFloat(b[1].percentage) - parseFloat(a[1].percentage))
+              .map(([lang, data]) => (
+                <div key={lang}>
+                  {lang}: {data.percentage}%
+                </div>
+              ))}
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  // TagFilterDropdown component for multi-select tag filtering with search
+  const TagFilterDropdown = ({
+    value,
+    onChange,
+    options
+  }: {
+    value: string[];
+    onChange: (tags: string[]) => void;
+    options: { tag: string; count: number }[]
+  }) => {
+    const [isOpen, setIsOpen] = useState(false);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
+    const wrapperRef = useRef<HTMLDivElement>(null);
+    const debounceTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    // 防抖处理
+    useEffect(() => {
+      if (debounceTimeoutRef.current) {
+        clearTimeout(debounceTimeoutRef.current);
+      }
+      
+      debounceTimeoutRef.current = setTimeout(() => {
+        setDebouncedSearchTerm(searchTerm);
+      }, 300); // 300ms 防抖延迟
+
+      return () => {
+        if (debounceTimeoutRef.current) {
+          clearTimeout(debounceTimeoutRef.current);
+        }
+      };
+    }, [searchTerm]);
+
+    // 点击外部关闭下拉
+    useEffect(() => {
+      const handleClickOutside = (event: MouseEvent) => {
+        if (wrapperRef.current && !wrapperRef.current.contains(event.target as Node)) {
+          setIsOpen(false);
+        }
+      };
+
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
+    // 过滤选项
+    const filteredOptions = useMemo(() => {
+      if (!debouncedSearchTerm.trim()) return options;
+      return options.filter(option =>
+        option.tag.toLowerCase().includes(debouncedSearchTerm.toLowerCase())
+      );
+    }, [options, debouncedSearchTerm]);
+
+    const handleSelect = (tag: string) => {
+      const newTags = value.includes(tag)
+        ? value.filter(t => t !== tag)
+        : [...value, tag];
+      onChange(newTags);
+      setSearchTerm('');
+    };
+
+    const handleClear = (e: React.MouseEvent) => {
+      e.stopPropagation();
+      onChange([]);
+      setSearchTerm('');
+    };
+
+    const handleClearTag = (e: React.MouseEvent, tag: string) => {
+      e.stopPropagation();
+      e.preventDefault();
+      onChange(value.filter(t => t !== tag));
+    };
+
+    return (
+      <div className="tag-filter-dropdown multi-select" ref={wrapperRef}>
+        <div
+          className="dropdown-trigger"
+        >
+          <div className="selected-tags">
+            {value.map(tag => (
+              <div key={tag} className="selected-tag">
+                {tag}
+                <button
+                  className="tag-remove"
+                  onClick={(e) => handleClearTag(e, tag)}
+                  aria-label={`Remove ${tag}`}
+                >
+                  ×
+                </button>
+              </div>
+            ))}
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder={value.length === 0 ? t('filters.placeholder', 'Filter by tags...') : ""}
+              className="dropdown-input"
+              onFocus={() => setIsOpen(true)}
+              onClick={() => setIsOpen(true)}
+              onKeyDown={(e) => {
+                // 如果输入框为空且按下了退格键，则删除最后一个标签
+                if (e.key === 'Backspace' && searchTerm === '' && value.length > 0) {
+                  e.preventDefault();
+                  const newTags = [...value];
+                  newTags.pop();
+                  onChange(newTags);
+                }
+              }}
+            />
+          </div>
+          <div className="dropdown-controls">
+            {value.length > 0 && (
+              <button
+                className="clear-all"
+                onClick={handleClear}
+                aria-label="Clear all selections"
+              >
+                {t('filters.clearAll', 'Clear All')}
+              </button>
+            )}
+            <div
+              className="dropdown-arrow"
+              onClick={() => setIsOpen(!isOpen)}
+            >
+              {isOpen ? '▲' : '▼'}
+            </div>
+          </div>
+        </div>
+        
+            {isOpen && (
+              <div className="dropdown-options">
+                <div
+                  className={`option ${value.length === 0 ? 'selected' : ''}`}
+                  onClick={() => onChange([])}
+                >
+                  {t('filters.allTags', 'All Tags')}
+                </div>
+            {filteredOptions.length > 0 ? (
+              filteredOptions.map(item => (
+                <div
+                  key={item.tag}
+                  className={`option ${value.includes(item.tag) ? 'selected' : ''}`}
+                  onClick={() => handleSelect(item.tag)}
+                >
+                  <span className="tag-name">{item.tag}</span>
+                  <span className="tag-count">{item.count}</span>
+                  {value.includes(item.tag) && <span className="checkmark">✓</span>}
+                </div>
+              ))
+            ) : (
+              <div className="no-options">{t('filters.noMatchingTags', 'No matching tags')}</div>
+            )}
+              </div>
+            )}
+      </div>
+    );
+  };
 
   // 在生产环境中使用完整版本，开发环境中使用简化版本
   // const defaultDataUrl = import.meta.env.PROD ? './data/starred-repos.json' : './data/starred-repos-simple.json';
@@ -691,7 +693,7 @@ function App() {
           <div className="search-box">
             <input
               type="text"
-              placeholder="Search repositories..."
+              placeholder={t('search.placeholder', 'Search repositories...')}
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
               className="search-input"
@@ -709,7 +711,7 @@ function App() {
                 />
                 <span className="toggle-slider"></span>
               </label>
-              <span className="toggle-label">Hide All Details</span>
+              <span className="toggle-label">{t('filters.hideDetails', 'Hide All Details')}</span>
             </div>
 
             <select
@@ -717,7 +719,7 @@ function App() {
               onChange={(e) => setSelectedLanguage(e.target.value)}
               className="filter-select"
             >
-              <option value="">All Languages</option>
+              <option value="">{t('filters.allLanguages', 'All Languages')}</option>
               {languages.map(lang => (
                 <option key={lang} value={lang}>{lang}</option>
               ))}
@@ -734,13 +736,13 @@ function App() {
               onChange={(e) => setSortBy(e.target.value)}
               className="filter-select"
             >
-              <option value="stars">Sort by Stars</option>
-              <option value="forks">Sort by Forks</option>
-              <option value="updated">Sort by Updated</option>
-              <option value="created">Sort by Created</option>
-              <option value="starred">Sort by Starred</option>
-              <option value="name">Sort by Name</option>
-              <option value="relevance">Sort by Relevance</option>
+              <option value="stars">{t('filters.sortBy')} {t('sortOptions.stars')}</option>
+              <option value="forks">{t('filters.sortBy')} {t('sortOptions.forks')}</option>
+              <option value="updated">{t('filters.sortBy')} {t('sortOptions.updated')}</option>
+              <option value="created">{t('filters.sortBy')} {t('sortOptions.created')}</option>
+              <option value="starred">{t('filters.sortBy')} {t('sortOptions.starred')}</option>
+              <option value="name">{t('filters.sortBy')} {t('sortOptions.name')}</option>
+              <option value="relevance">{t('filters.sortBy')} {t('sortOptions.relevance')}</option>
             </select>
 
             <select
@@ -748,8 +750,8 @@ function App() {
               onChange={(e) => setSortOrder(e.target.value)}
               className="filter-select"
             >
-              <option value="desc">Descending</option>
-              <option value="asc">Ascending</option>
+              <option value="desc">{t('sortOrderOptions.desc')}</option>
+              <option value="asc">{t('sortOrderOptions.asc')}</option>
             </select>
           </div>
         </div>
@@ -763,12 +765,12 @@ function App() {
           )}
           {isSearching ? (
             <div className="searching-indicator">
-              <span>Searching...</span>
+              <span>{t('results.searching', 'Searching...')}</span>
               <span className="search-time">{searchTime.toFixed(2)}ms</span>
             </div>
           ) : (
             <div className="results-count">
-              Showing {displayedRepos.length} of {filteredAndSortedRepos.length} repositories
+              {t('results.showing', 'Showing')} {displayedRepos.length} {t('results.of', 'of')} {filteredAndSortedRepos.length} {t('results.repositories', 'repositories')}
             </div>
           )}
         </div>
@@ -777,7 +779,7 @@ function App() {
         <div className="repo-list">
           {displayedRepos.length === 0 ? (
             <div className="no-results">
-              No repositories found matching your criteria.
+              {t('results.noResults', 'No repositories found matching your criteria.')}
             </div>
           ) : (
             displayedRepos.map(repo => {
@@ -807,7 +809,7 @@ function App() {
                       {/* 上方：Tags 和 Topics */}
                       {repo.topics && repo.topics.length > 0 && (
                         <div className="repo-topics-group">
-                          <h4>Topics</h4>
+                          <h4>{t('repo.topics', 'Topics')}</h4>
                           <div className="repo-topics">
                             {repo.topics.map(topic => (
                               <span key={`${repo.id}-${topic}`} className="repo-topic">
@@ -827,18 +829,18 @@ function App() {
 
                   {/* 仓库信息（例如 license 和 primary language） */}
                   <div className="repo-additional-info">
-                    <h4>Repository Information</h4>
+                    <h4>{t('repo.info.title', 'Repository Information')}</h4>
                     <div className="repo-info-grid">
                       <div className="repo-info-item">
-                        <span className="repo-info-label">Primary Language:</span>
+                        <span className="repo-info-label">{t('repo.info.primaryLanguage', 'Primary Language:')}</span>
                         <span className="repo-info-value">{repo.language || 'N/A'}</span>
                       </div>
                       <div className="repo-info-item">
-                        <span className="repo-info-label">License:</span>
+                        <span className="repo-info-label">{t('repo.info.license', 'License:')}</span>
                         <span className="repo-info-value">{repo.licenseInfo?.name || 'N/A'}</span>
                       </div>
                       <div className="repo-info-item">
-                        <span className="repo-info-label">Status:</span>
+                        <span className="repo-info-label">{t('repo.info.status', 'Status:')}</span>
                         <span className="repo-info-value">
                           {repo.isArchived && <span className="status-archived">📦 Archived</span>}
                           {repo.isFork && <span className="status-fork">🍴 Fork</span>}
@@ -848,7 +850,7 @@ function App() {
                       </div>
                       {repo.parent && (
                         <div className="repo-info-item">
-                          <span className="repo-info-label">Parent:</span>
+                          <span className="repo-info-label">{t('repo.info.parent', 'Parent:')}</span>
                           <span className="repo-info-value">
                             <a href={repo.parent.url} target="_blank" rel="noopener noreferrer">
                               {repo.parent.nameWithOwner}
@@ -858,7 +860,7 @@ function App() {
                       )}
                       {repo.latestRelease && (
                         <div className="repo-info-item">
-                          <span className="repo-info-label">Latest Release:</span>
+                          <span className="repo-info-label">{t('repo.info.latestRelease', 'Latest Release:')}</span>
                           <span className="repo-info-value">
                             <a href={repo.latestRelease.url} target="_blank" rel="noopener noreferrer">
                               {repo.latestRelease.name} ({repo.latestRelease.tagName})
@@ -868,7 +870,7 @@ function App() {
                       )}
                       {repo.mirrorUrl && (
                         <div className="repo-info-item">
-                          <span className="repo-info-label">Mirror URL:</span>
+                          <span className="repo-info-label">{t('repo.info.mirrorUrl', 'Mirror URL:')}</span>
                           <span className="repo-info-value">
                             <a href={repo.mirrorUrl} target="_blank" rel="noopener noreferrer">
                               {repo.mirrorUrl}
@@ -878,7 +880,7 @@ function App() {
                       )}
                       {repo.pushedAt && (
                         <div className="repo-info-item">
-                          <span className="repo-info-label">Last Pushed:</span>
+                          <span className="repo-info-label">{t('repo.info.lastPushed', 'Last Pushed:')}</span>
                           <span className="repo-info-value">{formatDate(repo.pushedAt)}</span>
                         </div>
                       )}
@@ -888,7 +890,7 @@ function App() {
                   {/* Funding Links */}
                   {repo.fundingLinks && repo.fundingLinks.length > 0 && (
                     <div className="repo-funding">
-                      <h4>Funding</h4>
+                      <h4>{t('repo.funding', 'Funding')}</h4>
                       <div className="funding-links">
                         {repo.fundingLinks.map((funding, index) => (
                           <a
@@ -909,7 +911,7 @@ function App() {
                   {/* Packages */}
                   {repo.packages && repo.packages.length > 0 && (
                     <div className="repo-packages">
-                      <h4>Packages</h4>
+                      <h4>{t('repo.packages', 'Packages')}</h4>
                       <div className="package-list">
                         {repo.packages.map((pkg, index) => (
                           <span key={`${repo.id}-package-${index}`} className="package-badge">
@@ -923,7 +925,7 @@ function App() {
                   {/* Milestones */}
                   {repo.milestones && repo.milestones.length > 0 && (
                     <div className="repo-milestones">
-                      <h4>Milestones</h4>
+                      <h4>{t('repo.milestones', 'Milestones')}</h4>
                       <div className="milestone-list">
                         {repo.milestones.slice(0, 5).map((milestone, index) => (
                           <div key={`${repo.id}-milestone-${index}`} className="milestone-item">
@@ -981,14 +983,14 @@ function App() {
         {/* 显示是否还有更多数据 */}
         {displayedRepos.length < filteredAndSortedRepos.length && !loadingMore && (
           <div className="load-more-hint">
-            <p>Scroll down to load more repositories</p>
+            <p>{t('results.loadMore', 'Scroll down to load more repositories')}</p>
           </div>
         )}
 
         {/* 显示已加载所有数据 */}
         {displayedRepos.length >= filteredAndSortedRepos.length && displayedRepos.length > 0 && (
           <div className="all-loaded">
-            <p>All repositories loaded</p>
+            <p>{t('results.allLoaded', 'All repositories loaded')}</p>
           </div>
         )}
       </main>
@@ -998,13 +1000,13 @@ function App() {
         <div className="modal-overlay" onClick={() => setShowSettings(false)}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h2>Settings</h2>
+              <h2>{t('settings.title', 'Settings')}</h2>
               <button className="close-button" onClick={() => setShowSettings(false)}>×</button>
             </div>
 
             <div className="modal-body">
               <div className="form-group">
-                <label htmlFor="dataUrl">Data File URL:</label>
+                <label htmlFor="dataUrl">{t('settings.dataUrl', 'Data File URL:')}</label>
                 <input
                   type="text"
                   id="dataUrl"
@@ -1014,18 +1016,18 @@ function App() {
                   className="form-input"
                 />
                 <p className="help-text">
-                  Enter the URL to your starred repositories JSON file.
-                  Default: {defaultDataUrl}
+                  {t('settings.enterUrl', 'Enter the URL to your starred repositories JSON file.')}
+                  {t('settings.default', 'Default:')} {defaultDataUrl}
                 </p>
               </div>
             </div>
 
             <div className="modal-footer">
               <button className="reset-button" onClick={resetSettings}>
-                Reset to Default
+                {t('settings.reset', 'Reset to Default')}
               </button>
               <button className="save-button" onClick={saveSettings}>
-                Save Changes
+                {t('settings.save', 'Save Changes')}
               </button>
             </div>
           </div>

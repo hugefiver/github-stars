@@ -12,7 +12,10 @@
     "sortBy": "Sort by",
     "sortOrder": "Order",
     "hideDetails": "Hide All Details",
-    "clearAll": "Clear All"
+    "clearAll": "Clear All",
+    "placeholder": "Filter by tags...",
+    "allTags": "All Tags",
+    "noMatchingTags": "No matching tags"
   },
   "sortOptions": {
     "stars": "Stars",
@@ -31,13 +34,15 @@
     "topics": "Topics",
     "languages": "Languages",
     "info": {
+      "title": "Repository Information",
       "primaryLanguage": "Primary Language:",
       "license": "License:",
       "status": "Status:",
       "parent": "Parent:",
       "latestRelease": "Latest Release:",
       "mirrorUrl": "Mirror URL:",
-      "lastPushed": "Last Pushed:"
+      "lastPushed": "Last Pushed:",
+      "other": "Other"
     },
     "funding": "Funding",
     "packages": "Packages",
@@ -63,7 +68,8 @@
     "dataUrl": "Data File URL:",
     "default": "Default:",
     "reset": "Reset to Default",
-    "save": "Save Changes"
+    "save": "Save Changes",
+    "enterUrl": "Enter the URL to your starred repositories JSON file."
   },
   "status": {
     "archived": "📦 Archived",
