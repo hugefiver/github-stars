@@ -10,7 +10,7 @@ GitHub Stars Search 是一个自动获取用户 GitHub Star 仓库信息并在�
 ## 2. 技术栈
 
 - **后端**: GitHub Actions, Node.js 24, Octokit, GraphQL
-- **前端**: React 18, Vite, TypeScript, CSS3, MiniSearch
+- **前端**: React 18, Vite, TypeScript, CSS3, FlexSearch
 - **部署**: GitHub Pages
 - **包管理**: pnpm
 

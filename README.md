@@ -28,7 +28,7 @@
 ## 技术栈
 
 - **后端**: GitHub Actions, Node.js 24, Octokit, GraphQL
-- **前端**: React 18, Vite, TypeScript, CSS3, MiniSearch
+- **前端**: React 18, Vite, TypeScript, CSS3, FlexSearch
 - **部署**: GitHub Pages
 - **包管理**: pnpm
 
@@ -77,7 +77,7 @@
 
 ### 搜索和过滤
 
-- **关键字搜索**：在仓库名、描述和主题标签中搜索（使用 MiniSearch 实现高性能搜索）
+- **关键字搜索**：在仓库名、描述和主题标签中搜索（使用 FlexSearch 实现高性能搜索）
 - **语言过滤**：按编程语言筛选仓库
 - **标签过滤**：按仓库主题标签筛选
 - **多种排序**：按星数、fork 数、更新时间、创建时间、星标时间和名称排序

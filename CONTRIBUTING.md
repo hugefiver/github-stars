@@ -46,7 +46,7 @@
 - **后端**: Node.js 24, TypeScript, GitHub Actions
 - **API**: GitHub GraphQL API
 - **包管理**: pnpm
-- **搜索**: MiniSearch
+- **搜索**: FlexSearch
 - **部署**: GitHub Pages
 
 ### 如何贡献
