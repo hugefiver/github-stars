@@ -28,19 +28,24 @@ $focus-shadow: 0 0 0 3px rgba(3, 102, 214, 0.3);
 
   .header-controls {
     display: flex;
-    justify-content: center;
+    justify-content: flex-end;
     align-items: center;
     gap: 10px;
     margin-top: 10px;
 
     .language-switcher {
+      position: absolute;
+      top: 10px;
+      right: 130px; // 减小与设置按钮的距离
+      
       .language-select {
-        padding: 5px 8px;
+        padding: 10px 12px; // 增加内边距以增加高度
         border: 1px solid $border-color;
         border-radius: $border-radius;
         font-size: 14px;
         background-color: white;
         cursor: pointer;
+        box-sizing: border-box;
 
         &:focus {
           outline: none;
@@ -87,7 +92,7 @@ $focus-shadow: 0 0 0 3px rgba(3, 102, 214, 0.3);
   background: none;
   border: 1px solid $border-color;
   border-radius: $border-radius;
-  padding: 8px 12px;
+  padding: 10px 15px;
   cursor: pointer;
   font-size: 14px;
   color: $secondary-text-color;

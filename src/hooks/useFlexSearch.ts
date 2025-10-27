@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
+import FlexSearch, {Index} from 'flexsearch';
 import { Repository } from '../types';
 
 interface SearchDocument {
@@ -33,10 +34,7 @@ export const useFlexSearch = (repositories: Repository[]) => {
   // 初始化搜索索引
   useEffect(() => {
     const initializeSearch = async () => {
-      try {
-        const flexsearchModule = await import('flexsearch');
-        const FlexSearch = flexsearchModule.default || flexsearchModule;
-        
+      try {        
         // 创建搜索索引配置
         const index = new FlexSearch.Index({
           tokenize: "forward",
@@ -66,7 +64,7 @@ export const useFlexSearch = (repositories: Repository[]) => {
   }, []);
 
   // 构建搜索索引的辅助函数
-  const buildIndex = (index: any, repos: Repository[]) => {
+  const buildIndex = (index: Index, repos: Repository[]) => {
     // 清空现有索引
     index.clear();
     
