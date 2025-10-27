@@ -1,0 +1,80 @@
+{
+  "header": {
+    "title": "GitHub Stars Search",
+    "browse": "浏览和搜索您的星标仓库",
+    "settings": "⚙️ 设置"
+  },
+  "search": {
+    "placeholder": "搜索仓库..."
+  },
+  "filters": {
+    "allLanguages": "所有语言",
+    "sortBy": "排序方式",
+    "sortOrder": "排序顺序",
+    "hideDetails": "隐藏所有详情",
+    "clearAll": "清除全部"
+  },
+  "sortOptions": {
+    "stars": "星标数",
+    "forks": "复刻数",
+    "updated": "更新时间",
+    "created": "创建时间",
+    "starred": "星标时间",
+    "name": "名称",
+    "relevance": "相关性"
+  },
+  "sortOrderOptions": {
+    "desc": "降序",
+    "asc": "升序"
+  },
+  "repo": {
+    "topics": "话题",
+    "languages": "语言",
+    "info": {
+      "primaryLanguage": "主要语言：",
+      "license": "许可证：",
+      "status": "状态：",
+      "parent": "父仓库：",
+      "latestRelease": "最新发布：",
+      "mirrorUrl": "镜像地址：",
+      "lastPushed": "最后推送："
+    },
+    "funding": "资助",
+    "packages": "包",
+    "milestones": "里程碑",
+    "updated": "更新于",
+    "starred": "星标于"
+  },
+  "stats": {
+    "stars": "星标",
+    "forks": "复刻"
+  },
+  "results": {
+    "showing": "显示",
+    "of": "/",
+    "repositories": "个仓库",
+    "noResults": "未找到符合您条件的仓库。",
+    "searching": "搜索中...",
+    "allLoaded": "已加载全部仓库",
+    "loadMore": "向下滚动以加载更多仓库"
+  },
+  "settings": {
+    "title": "设置",
+    "dataUrl": "数据文件URL：",
+    "default": "默认：",
+    "reset": "重置为默认",
+    "save": "保存更改"
+  },
+  "status": {
+    "archived": "📦 已归档",
+    "fork": "🍴 复刻",
+    "mirror": "🪞 镜像",
+    "active": "活跃"
+  },
+  "languageSwitcher": {
+    "english": "英语",
+    "chinese": "中文",
+    "japanese": "日语",
+    "korean": "韩语"
+  }
+}

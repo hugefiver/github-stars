@@ -1,0 +1,80 @@
+{
+  "header": {
+    "title": "GitHub Stars Search",
+    "browse": "Browse and search your starred repositories",
+    "settings": "⚙️ Settings"
+  },
+  "search": {
+    "placeholder": "Search repositories..."
+  },
+  "filters": {
+    "allLanguages": "All Languages",
+    "sortBy": "Sort by",
+    "sortOrder": "Order",
+    "hideDetails": "Hide All Details",
+    "clearAll": "Clear All"
+  },
+  "sortOptions": {
+    "stars": "Stars",
+    "forks": "Forks",
+    "updated": "Updated",
+    "created": "Created",
+    "starred": "Starred",
+    "name": "Name",
+    "relevance": "Relevance"
+  },
+  "sortOrderOptions": {
+    "desc": "Descending",
+    "asc": "Ascending"
+  },
+  "repo": {
+    "topics": "Topics",
+    "languages": "Languages",
+    "info": {
+      "primaryLanguage": "Primary Language:",
+      "license": "License:",
+      "status": "Status:",
+      "parent": "Parent:",
+      "latestRelease": "Latest Release:",
+      "mirrorUrl": "Mirror URL:",
+      "lastPushed": "Last Pushed:"
+    },
+    "funding": "Funding",
+    "packages": "Packages",
+    "milestones": "Milestones",
+    "updated": "Updated",
+    "starred": "Starred"
+  },
+  "stats": {
+    "stars": "Stars",
+    "forks": "Forks"
+  },
+  "results": {
+    "showing": "Showing",
+    "of": "of",
+    "repositories": "repositories",
+    "noResults": "No repositories found matching your criteria.",
+    "searching": "Searching...",
+    "allLoaded": "All repositories loaded",
+    "loadMore": "Scroll down to load more repositories"
+  },
+  "settings": {
+    "title": "Settings",
+    "dataUrl": "Data File URL:",
+    "default": "Default:",
+    "reset": "Reset to Default",
+    "save": "Save Changes"
+  },
+  "status": {
+    "archived": "📦 Archived",
+    "fork": "🍴 Fork",
+    "mirror": "🪞 Mirror",
+    "active": "Active"
+  },
+  "languageSwitcher": {
+    "english": "English",
+    "chinese": "中文",
+    "japanese": "日本語",
+    "korean": "한국어"
+  }
+}

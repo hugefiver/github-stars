@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { atom, useAtom, useSetAtom } from 'jotai';
+import { useTranslation } from 'react-i18next';
 import { Repository, LanguageStat, LanguageStats } from './types';
 import {
   sortByAtom,
@@ -286,6 +287,7 @@ const LanguageBar = ({ languages }: { languages: Repository['languages'] }) => {
 };
 
 function App() {
+  const { t, i18n } = useTranslation();
   const [repos, setRepos] = useState<Repository[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -681,8 +683,8 @@ function App() {
     return (
       <div className="app">
         <header className="header">
-          <h1>GitHub Stars Search</h1>
-          <p>Loading starred repositories...</p>
+          <h1>{t('header.title', 'GitHub Stars Search')}</h1>
+          <p>{t('header.browse', 'Browse and search your starred repositories')}</p>
         </header>
       </div>
     );
@@ -692,7 +694,7 @@ function App() {
     return (
       <div className="app">
         <header className="header">
-          <h1>GitHub Stars Search</h1>
+          <h1>{t('header.title', 'GitHub Stars Search')}</h1>
           <div className="error">Error: {error}</div>
         </header>
       </div>
@@ -702,7 +704,7 @@ function App() {
   return (
     <div className="app">
       <header className="header">
-        <h1>GitHub Stars Search</h1>
+        <h1>{t('header.title', 'GitHub Stars Search')}</h1>
         <div className="badges">
           <a href="https://github.com/hugefiver" target="_blank" rel="noopener noreferrer">
             <img src="https://img.shields.io/badge/Author-hugefiver-blue" alt="Author" />
@@ -711,10 +713,24 @@ function App() {
             <img src="https://img.shields.io/github/stars/hugefiver/github-stars?style=social" alt="GitHub Stars" />
           </a>
         </div>
-        <p>Browse and search your starred repositories</p>
-        <button className="settings-button" onClick={() => setShowSettings(true)}>
-          ⚙️ Settings
-        </button>
+        <p>{t('header.browse', 'Browse and search your starred repositories')}</p>
+        <div className="header-controls">
+          <div className="language-switcher">
+            <select
+              value={i18n.language}
+              onChange={(e) => i18n.changeLanguage(e.target.value)}
+              className="language-select"
+            >
+              <option value="en">{t('languageSwitcher.english', 'English')}</option>
+              <option value="zh">{t('languageSwitcher.chinese', '中文')}</option>
+              <option value="ja">{t('languageSwitcher.japanese', '日本語')}</option>
+              <option value="kr_Kim">{t('languageSwitcher.korean', '한국어')}</option>
+            </select>
+          </div>
+          <button className="settings-button" onClick={() => setShowSettings(true)}>
+            {t('header.settings', '⚙️ Settings')}
+          </button>
+        </div>
       </header>
 
       <main className="main">

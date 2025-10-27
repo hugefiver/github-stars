@@ -26,6 +26,31 @@ $focus-shadow: 0 0 0 3px rgba(3, 102, 214, 0.3);
   border-bottom: 1px solid $border-color;
   position: relative;
 
+  .header-controls {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+    margin-top: 10px;
+
+    .language-switcher {
+      .language-select {
+        padding: 5px 8px;
+        border: 1px solid $border-color;
+        border-radius: $border-radius;
+        font-size: 14px;
+        background-color: white;
+        cursor: pointer;
+
+        &:focus {
+          outline: none;
+          border-color: $link-color;
+          box-shadow: $focus-shadow;
+        }
+      }
+    }
+  }
+
   h1 {
     color: $text-color;
     margin-bottom: 10px;
@@ -52,6 +77,7 @@ $focus-shadow: 0 0 0 3px rgba(3, 102, 214, 0.3);
     display: block;
   }
 }
+
 
 // Settings button
 .settings-button {

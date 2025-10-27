@@ -1,0 +1,80 @@
+{
+  "header": {
+    "title": "GitHub Stars Search",
+    "browse": "스타된 저장소 탐색 및 검색",
+    "settings": "⚙️ 설정"
+  },
+  "search": {
+    "placeholder": "저장소 검색..."
+  },
+  "filters": {
+    "allLanguages": "모든 언어",
+    "sortBy": "정렬 기준",
+    "sortOrder": "정렬 순서",
+    "hideDetails": "모든 세부정보 숨기기",
+    "clearAll": "모두 지우기"
+  },
+  "sortOptions": {
+    "stars": "스타 수",
+    "forks": "포크 수",
+    "updated": "업데이트 시간",
+    "created": "생성 시간",
+    "starred": "스타 시간",
+    "name": "이름",
+    "relevance": "관련성"
+  },
+  "sortOrderOptions": {
+    "desc": "내림차순",
+    "asc": "오름차순"
+  },
+  "repo": {
+    "topics": "토픽",
+    "languages": "언어",
+    "info": {
+      "primaryLanguage": "주요 언어:",
+      "license": "라이선스:",
+      "status": "상태:",
+      "parent": "부모 저장소:",
+      "latestRelease": "최신 릴리스:",
+      "mirrorUrl": "미러 URL:",
+      "lastPushed": "마지막 푸시:"
+    },
+    "funding": "후원",
+    "packages": "패키지",
+    "milestones": "마일스톤",
+    "updated": "업데이트",
+    "starred": "스타됨"
+  },
+  "stats": {
+    "stars": "스타",
+    "forks": "포크"
+  },
+  "results": {
+    "showing": "표시 중",
+    "of": "/",
+    "repositories": "저장소",
+    "noResults": "조건에 맞는 저장소를 찾을 수 없습니다.",
+    "searching": "검색 중...",
+    "allLoaded": "모든 저장소 로드 완료",
+    "loadMore": "스크롤하여 더 많은 저장소 로드"
+  },
+  "settings": {
+    "title": "설정",
+    "dataUrl": "데이터 파일 URL:",
+    "default": "기본값:",
+    "reset": "기본값으로 재설정",
+    "save": "변경사항 저장"
+  },
+  "status": {
+    "archived": "📦 보관됨",
+    "fork": "🍴 포크",
+    "mirror": "🪞 미러",
+    "active": "활성"
+  },
+  "languageSwitcher": {
+    "english": "영어",
+    "chinese": "중국어",
+    "japanese": "일본어",
+    "korean": "한국어"
+  }
+}
