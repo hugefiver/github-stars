@@ -14,6 +14,12 @@ export const tempDataUrlAtom = atom<string>('');
 export const displayedCountAtom = atom<number>(10);
 export const loadingMoreAtom = atom<boolean>(false);
 
+// 搜索状态
+export const searchResultsAtom = atom<any[]>([]);
+export const isSearchingAtom = atom<boolean>(false);
+export const searchTimeAtom = atom<number>(0);
+export const searchErrorAtom = atom<string | null>(null);
+
 // 使用 Jotai 的 atomWithStorage 来持久化设置到 localStorage
 // 为每个设置创建独立的持久化 atom
 export const dataUrlAtom = atomWithStorage<string>('github-stars-dataUrl', '');

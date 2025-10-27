@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { atom, useAtom, useSetAtom } from 'jotai';
 import { useTranslation } from 'react-i18next';
 import { Repository, LanguageStat, LanguageStats } from './types';
+import { useFlexSearch } from './hooks/useFlexSearch';
 import {
   sortByAtom,
   sortOrderAtom,
@@ -11,7 +12,11 @@ import {
   dataUrlAtom,
   tempDataUrlAtom,
   displayedCountAtom,
-  loadingMoreAtom
+  loadingMoreAtom,
+  searchResultsAtom,
+  isSearchingAtom,
+  searchTimeAtom,
+  searchErrorAtom
 } from './store/atoms';
 import './App.scss';
 
@@ -308,12 +313,12 @@ function App() {
   const [displayedCount, setDisplayedCount] = useAtom(displayedCountAtom);
   const [loadingMore, setLoadingMore] = useAtom(loadingMoreAtom);
 
-  // FlexSearch 实例和状态
-  const [searchIndex, setSearchIndex] = useState<any>(null);
-  const [searchResults, setSearchResults] = useState<any[]>([]);
-  const [isSearching, setIsSearching] = useState<boolean>(false);
-  const [searchTime, setSearchTime] = useState<number>(0);
-  const [searchError, setSearchError] = useState<string | null>(null);
+  const { searchIndex, searchResults: hookSearchResults, isSearching: hookIsSearching, searchTime: hookSearchTime, searchError: hookSearchError, debouncedSearch } = useFlexSearch(repos);
+  
+  const [searchResults, setSearchResults] = useAtom(searchResultsAtom);
+  const [isSearching, setIsSearching] = useAtom(isSearchingAtom);
+  const [searchTime, setSearchTime] = useAtom(searchTimeAtom);
+  const [searchError, setSearchError] = useAtom(searchErrorAtom);
 
   const itemsPerLoad = 10;
 
@@ -351,164 +356,26 @@ function App() {
     }
   };
 
-  // 初始化 FlexSearch 索引
+  // 使用Hook的防抖搜索
   useEffect(() => {
-    const initializeSearch = async () => {
-      try {
-        const flexsearchModule = await import('flexsearch');
-        const FlexSearch = flexsearchModule.default || flexsearchModule;
-        
-        // 创建搜索索引配置，启用内置 worker 模式
-        const indexConfig: any = {
-          id: 'id',
-          index: [
-            {
-              field: 'name',
-              store: true,
-              boost: 2
-            },
-            {
-              field: 'full_name',
-              store: true,
-              boost: 2
-            },
-            {
-              field: 'description',
-              store: true,
-              boost: 1
-            },
-            {
-              field: 'language',
-              store: true,
-              boost: 1
-            },
-            {
-              field: 'topics',
-              store: true,
-              boost: 1.5,
-              split: /\W+/  // 处理 topics 数组
-            }
-          ],
-          // 启用 worker 模式以提升性能
-          worker: true,
-          preset: 'score',
-          tokenize: 'forward',
-          optimize: true
-        };
-        
-        const index = new FlexSearch.Index(indexConfig);
-        setSearchIndex(index);
-        
-        // 如果已有数据，立即构建索引
-        if (repos.length > 0) {
-          buildIndex(index, repos);
-        }
-      } catch (error) {
-        console.error('Error initializing search:', error);
-        setSearchError('Failed to initialize search');
-      }
-    };
-    
-    initializeSearch();
-  }, []);
-  
-  // 构建搜索索引的辅助函数
-  const buildIndex = (index: any, repositories: Repository[]) => {
-    // 清空现有索引
-    index.clear();
-    
-    // 批量添加数据到索引
-    repositories.forEach((repo: Repository) => {
-      const doc = {
-        id: repo.id,
-        name: String(repo.name || ''),
-        full_name: String(repo.full_name || ''),
-        description: String(repo.description || ''),
-        language: String(repo.language || ''),
-        topics: Array.isArray(repo.topics) ? repo.topics.join(' ') : ''
-      };
+    if (inputValue.trim()) {
+      setIsSearching(true);
+      setSearchError(null);
       
-      index.add(doc.id, doc);
-    });
-  };
-  
-  // 当数据加载完成后，构建搜索索引
-  useEffect(() => {
-    if (searchIndex && repos.length > 0) {
-      buildIndex(searchIndex, repos);
+      debouncedSearch(inputValue);
+    } else {
+      // 如果输入为空，清空搜索结果
+      // 但不直接设置searchResults，因为那是Hook的内部状态
     }
-  }, [repos, searchIndex]);
-  
-  // 当数据 URL 变化时，重新构建索引
-  useEffect(() => {
-    if (searchIndex && repos.length > 0) {
-      buildIndex(searchIndex, repos);
-    }
-  }, [dataUrl, repos, searchIndex]);
-  
-  // 记录搜索开始时间的 ref
-  const startTimeRef = useRef<number>(0);
+  }, [inputValue, debouncedSearch]);
 
-  // 搜索输入防抖
+  // 同步Hook的状态到组件状态
   useEffect(() => {
-    const handler = setTimeout(async () => {
-      if (searchIndex && inputValue.trim()) {
-        setIsSearching(true);
-        setSearchError(null);
-        startTimeRef.current = performance.now();
-        
-        try {
-          // 执行搜索
-          const results = searchIndex.search(inputValue.trim(), {
-            limit: 100,
-            suggest: true
-          });
-          
-          // 处理搜索结果
-          let processedResults: any[] = [];
-          
-          if (Array.isArray(results)) {
-            processedResults = results
-              .flatMap((result: any) => {
-                if (result && Array.isArray(result.result)) {
-                  return result.result;
-                } else if (Array.isArray(result)) {
-                  return result;
-                } else {
-                  return [];
-                }
-              })
-              .map((id: number) => {
-                const doc = searchIndex.get(id);
-                return {
-                  id: doc.id,
-                  name: doc.name,
-                  full_name: doc.full_name,
-                  description: doc.description,
-                  language: doc.language,
-                  topics: doc.topics ? doc.topics.split(' ') : [],
-                  score: 1
-                };
-              });
-          }
-          
-          const endTime = performance.now();
-          setSearchResults(processedResults);
-          setIsSearching(false);
-          setSearchTime(endTime - startTimeRef.current);
-        } catch (error) {
-          console.error('Search error:', error);
-          setIsSearching(false);
-          setSearchError('Search failed');
-        }
-      } else {
-        setSearchResults([]);
-        setIsSearching(false);
-      }
-    }, 300);
-    
-    return () => clearTimeout(handler);
-  }, [inputValue, searchIndex]);
+    setSearchResults(hookSearchResults);
+    setIsSearching(hookIsSearching);
+    setSearchTime(hookSearchTime);
+    setSearchError(hookSearchError);
+  }, [hookSearchResults, hookIsSearching, hookSearchTime, hookSearchError]);
 
   // 初始加载数据
   useEffect(() => {
@@ -712,66 +579,6 @@ function App() {
     return filteredAndSortedRepos.slice(0, displayedCount);
   }, [filteredAndSortedRepos, displayedCount]);
 
-  // 搜索输入防抖
-  useEffect(() => {
-    const handler = setTimeout(async () => {
-      if (searchIndex && inputValue.trim()) {
-        setIsSearching(true);
-        setSearchError(null);
-        startTimeRef.current = performance.now();
-        
-        try {
-          // 执行搜索
-          const results = await searchIndex.search(inputValue.trim(), {
-            limit: 100,
-            suggest: true
-          });
-          
-          // 处理搜索结果
-          let processedResults: any[] = [];
-          
-          if (Array.isArray(results)) {
-            processedResults = results
-              .flatMap((result: any) => {
-                if (result && Array.isArray(result.result)) {
-                  return result.result;
-                } else if (Array.isArray(result)) {
-                  return result;
-                } else {
-                  return [];
-                }
-              })
-              .map((id: number) => {
-                const doc = searchIndex.get(id);
-                return {
-                  id: doc.id,
-                  name: doc.name,
-                  full_name: doc.full_name,
-                  description: doc.description,
-                  language: doc.language,
-                  topics: doc.topics ? doc.topics.split(' ') : [],
-                  score: 1
-                };
-              });
-          }
-          
-          const endTime = performance.now();
-          setSearchResults(processedResults);
-          setIsSearching(false);
-          setSearchTime(endTime - startTimeRef.current);
-        } catch (error) {
-          console.error('Search error:', error);
-          setIsSearching(false);
-          setSearchError('Search failed');
-        }
-      } else {
-        setSearchResults([]);
-        setIsSearching(false);
-      }
-    }, 300);
-    
-    return () => clearTimeout(handler);
-  }, [inputValue, searchIndex]);
 
   // 重置显示数量
   useEffect(() => {

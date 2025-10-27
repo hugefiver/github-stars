@@ -29,7 +29,6 @@ github-stars-search/
 │   ├── App.tsx            # 主要组件
 │   ├── types.ts           # 前端类型定义
 │   ├── store/             # Jotai 状态管理
-│   ├── search.worker.ts   # Web Worker 搜索实现
 │   └── ...
 ├── docs/                  # 构建输出和 GitHub Pages
 ├── .github/workflows/     # GitHub Actions 工作流
