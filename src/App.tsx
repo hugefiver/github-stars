@@ -313,6 +313,7 @@ function App() {
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [isSearching, setIsSearching] = useState<boolean>(false);
   const [searchTime, setSearchTime] = useState<number>(0);
+  const [searchError, setSearchError] = useState<string | null>(null);
 
   const itemsPerLoad = 10;
 
@@ -352,14 +353,21 @@ function App() {
 
   // 初始化搜索 Worker
   useEffect(() => {
-    const worker = new Worker(new URL('./search.worker.ts', import.meta.url));
+    const worker = new Worker(new URL('./search.worker.ts', import.meta.url), { type: 'module' });
     setSearchWorker(worker);
-
+  
     worker.onmessage = (e) => {
       const { type, payload } = e.data;
       switch (type) {
         case 'INITIALIZED':
           console.log('Search worker initialized');
+          // 在初始化完成后构建索引
+          if (repos.length > 0) {
+            worker.postMessage({
+              type: 'BUILD_INDEX',
+              payload: { repositories: repos }
+            });
+          }
           break;
         case 'INDEX_BUILT':
           console.log('Search index built with', payload.count, 'repositories');
@@ -373,17 +381,39 @@ function App() {
         case 'ERROR':
           console.error('Search worker error:', payload.error);
           setIsSearching(false);
+          setSearchError(`Search error: ${payload.error}`);
           break;
       }
     };
-
+  
     // 初始化 worker
     worker.postMessage({ type: 'INITIALIZE', payload: {} });
-
+  
     return () => {
       worker.terminate();
     };
   }, []);
+  
+  // 当数据加载完成后，构建搜索索引
+  useEffect(() => {
+    if (searchWorker && repos.length > 0) {
+      // 只有在 worker 已经初始化的情况下才发送 BUILD_INDEX 消息
+      searchWorker.postMessage({
+        type: 'BUILD_INDEX',
+        payload: { repositories: repos }
+      });
+    }
+  }, [repos, searchWorker]);
+  
+  // 当数据 URL 变化时，重新构建索引
+  useEffect(() => {
+    if (searchWorker && repos.length > 0) {
+      searchWorker.postMessage({
+        type: 'UPDATE_DATA',
+        payload: { repositories: repos }
+      });
+    }
+  }, [dataUrl, searchWorker, repos]);
 
   // 记录搜索开始时间的 ref
   const startTimeRef = useRef<number>(0);
@@ -615,6 +645,7 @@ function App() {
     const handler = setTimeout(() => {
       if (searchWorker && inputValue.trim()) {
         setIsSearching(true);
+        setSearchError(null);
         startTimeRef.current = performance.now();
         searchWorker.postMessage({
           type: 'SEARCH',
@@ -804,6 +835,11 @@ function App() {
 
         {/* 结果统计 */}
         <div className="results-info">
+          {searchError && (
+            <div className="search-error">
+              {searchError}
+            </div>
+          )}
           {isSearching ? (
             <div className="searching-indicator">
               <span>Searching...</span>

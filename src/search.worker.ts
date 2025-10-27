@@ -58,14 +58,14 @@ async function initializeFlexSearch() {
 }
 
 // 构建索引
-function buildIndex(repositories: Repository[]) {
+async function buildIndex(repositories: Repository[]) {
   if (!searchIndex) {
-    throw new Error('Search index not initialized');
+    await initializeFlexSearch();
   }
   
   // 清空现有索引
   searchIndex = null;
-  initializeFlexSearch();
+  await initializeFlexSearch();
   
   // 批量添加数据到索引
   repositories.forEach((repo: Repository) => {
@@ -95,22 +95,41 @@ function performSearch(query: string, limit: number = 100) {
   });
   
   // FlexSearch 返回的是数组格式，需要转换为类似 minisearch 的格式
-  const searchResults = results
-    .flatMap((result: any) => result.result || [])
-    .map((id: number) => {
-      const doc = searchIndex.get(id);
-      return {
-        id: doc.id,
-        name: doc.name,
-        full_name: doc.full_name,
-        description: doc.description,
-        language: doc.language,
-        topics: doc.topics ? doc.topics.split(' ') : [],
-        score: 1 // FlexSearch 使用不同的评分机制，这里简化处理
-      };
-    });
+  // 检查 results 的结构并正确处理
+  let processedResults: any[] = [];
   
-  return searchResults;
+  if (Array.isArray(results)) {
+    // 如果 results 是数组，直接处理
+    processedResults = results
+      .flatMap((result: any) => {
+        // 检查 result 是否有 result 属性
+        if (result && Array.isArray(result.result)) {
+          return result.result;
+        }
+        // 如果没有 result 属性，但 result 本身是数组，直接返回
+        else if (Array.isArray(result)) {
+          return result;
+        }
+        // 否则返回空数组
+        else {
+          return [];
+        }
+      })
+      .map((id: number) => {
+        const doc = searchIndex.get(id);
+        return {
+          id: doc.id,
+          name: doc.name,
+          full_name: doc.full_name,
+          description: doc.description,
+          language: doc.language,
+          topics: doc.topics ? doc.topics.split(' ') : [],
+          score: 1 // FlexSearch 使用不同的评分机制，这里简化处理
+        };
+      });
+  }
+  
+  return processedResults;
 }
 
 // Worker 消息处理
