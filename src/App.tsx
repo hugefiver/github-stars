@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { atom, useAtom, useSetAtom } from 'jotai';
-import MiniSearch from 'minisearch';
 import { Repository, LanguageStat, LanguageStats } from './types';
 import {
   sortByAtom,
@@ -307,8 +306,11 @@ function App() {
   const [displayedCount, setDisplayedCount] = useAtom(displayedCountAtom);
   const [loadingMore, setLoadingMore] = useAtom(loadingMoreAtom);
 
-  // MiniSearch 实例
-  const [searchIndex, setSearchIndex] = useState<MiniSearch | null>(null);
+  // Web Worker 实例和状态
+  const [searchWorker, setSearchWorker] = useState<Worker | null>(null);
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [isSearching, setIsSearching] = useState<boolean>(false);
+  const [searchTime, setSearchTime] = useState<number>(0);
 
   const itemsPerLoad = 10;
 
@@ -346,28 +348,63 @@ function App() {
     }
   };
 
-  // 初始化 MiniSearch 索引
+  // 初始化搜索 Worker
   useEffect(() => {
-    const miniSearch = new MiniSearch({
-      fields: ['name', 'full_name', 'description', 'language', 'topics'],
-      storeFields: ['id', 'name', 'full_name', 'description', 'language', 'languages', 'topics', 'html_url', 'stargazers_count', 'forks_count', 'updated_at', 'created_at', 'starred_at'],
-      searchOptions: {
-        boost: { name: 2, full_name: 2, topics: 1.5 },
-        fuzzy: 0.2,
-        prefix: true
+    const worker = new Worker(new URL('./search.worker.ts', import.meta.url));
+    setSearchWorker(worker);
+
+    worker.onmessage = (e) => {
+      const { type, payload } = e.data;
+      switch (type) {
+        case 'INITIALIZED':
+          console.log('Search worker initialized');
+          break;
+        case 'INDEX_BUILT':
+          console.log('Search index built with', payload.count, 'repositories');
+          break;
+        case 'SEARCH_RESULTS':
+          const endTime = performance.now();
+          setSearchResults(payload.results);
+          setIsSearching(false);
+          setSearchTime(endTime - startTimeRef.current);
+          break;
+        case 'ERROR':
+          console.error('Search worker error:', payload.error);
+          setIsSearching(false);
+          break;
       }
-    });
-    setSearchIndex(miniSearch);
+    };
+
+    // 初始化 worker
+    worker.postMessage({ type: 'INITIALIZE', payload: {} });
+
+    return () => {
+      worker.terminate();
+    };
   }, []);
 
-  // 当数据加载完成后，添加到搜索索引
+  // 记录搜索开始时间的 ref
+  const startTimeRef = useRef<number>(0);
+
+  // 当数据加载完成后，构建搜索索引
   useEffect(() => {
-    if (searchIndex && repos.length > 0) {
-      // 先清空索引，然后重新添加所有数据
-      searchIndex.removeAll();
-      searchIndex.addAll(repos);
+    if (searchWorker && repos.length > 0) {
+      searchWorker.postMessage({
+        type: 'BUILD_INDEX',
+        payload: { repositories: repos }
+      });
     }
-  }, [repos, searchIndex]);
+  }, [repos, searchWorker]);
+
+  // 当数据 URL 变化时，重新构建索引
+  useEffect(() => {
+    if (searchWorker && repos.length > 0) {
+      searchWorker.postMessage({
+        type: 'UPDATE_DATA',
+        payload: { repositories: repos }
+      });
+    }
+  }, [dataUrl, searchWorker, repos]);
 
   // 初始加载数据
   useEffect(() => {
@@ -445,7 +482,7 @@ function App() {
   // 计算过滤后的标签及其匹配的仓库数量
   const filteredTagsWithCount = useMemo(() => {
     // 如果没有选择任何标签或其他筛选条件，则返回所有标签
-    if (selectedLanguage === '' && selectedTag.length === 0 && searchTerm === '') {
+    if (selectedLanguage === '' && selectedTag.length === 0 && searchResults.length === 0) {
       const tagCount: Record<string, number> = {};
       repos.forEach(repo => {
         if (repo.topics) {
@@ -470,30 +507,13 @@ function App() {
     
     // 应用标签筛选（必须包含所有已选标签）
     if (selectedTag.length > 0) {
-      filteredRepos = filteredRepos.filter(repo => 
+      filteredRepos = filteredRepos.filter(repo =>
         repo.topics && selectedTag.every(tag => repo.topics.includes(tag))
       );
     }
     
     // 应用搜索词筛选
-    if (searchTerm && searchIndex) {
-      const searchResults = searchIndex.search(searchTerm, {
-        filter: (result) => {
-          // 语言过滤
-          if (selectedLanguage && result.language !== selectedLanguage) {
-            return false;
-          }
-          // 标签过滤 - 仓库必须包含所有选中的标签
-          if (selectedTag.length > 0) {
-            if (!result.topics) return false;
-            if (!selectedTag.every(tag => result.topics.includes(tag))) {
-              return false;
-            }
-          }
-          return true;
-        }
-      });
-      
+    if (searchResults.length > 0) {
       filteredRepos = searchResults.map(result => {
         const repo = repos.find(r => r.id === result.id);
         return repo;
@@ -513,33 +533,14 @@ function App() {
     return Object.entries(tagCount)
       .map(([tag, count]) => ({ tag, count }))
       .sort((a, b) => b.count - a.count);
-  }, [repos, selectedLanguage, selectedTag, searchTerm, searchIndex]);
+  }, [repos, selectedLanguage, selectedTag, searchResults]);
 
   // 过滤和排序数据
   const filteredAndSortedRepos = useMemo(() => {
     let result: Repository[] = [];
-    let searchResults: any[] = []; // 用于保存搜索结果以获取评分
 
-    // 使用 MiniSearch 进行搜索
-    if (searchTerm && searchIndex) {
-      searchResults = searchIndex.search(searchTerm, {
-        filter: (result) => {
-          // 语言过滤
-          if (selectedLanguage && result.language !== selectedLanguage) {
-            return false;
-          }
-          // 标签过滤 - 仓库必须包含所有选中的标签
-          if (selectedTag.length > 0) {
-            if (!result.topics) return false;
-            if (!selectedTag.every(tag => result.topics.includes(tag))) {
-              return false;
-            }
-          }
-          return true;
-        }
-      });
-
-      // 获取完整的仓库对象
+    // 使用 Web Worker 搜索结果
+    if (searchResults.length > 0) {
       result = searchResults.map(result => {
         const repo = repos.find(r => r.id === result.id);
         return repo;
@@ -553,8 +554,8 @@ function App() {
           repo.language === selectedLanguage;
 
         // 标签过滤 - 仓库必须包含所有选中的标签
-        const matchesTags = 
-          selectedTag.length === 0 || 
+        const matchesTags =
+          selectedTag.length === 0 ||
           (repo.topics && selectedTag.every(tag => repo.topics.includes(tag)));
 
         return matchesLanguage && matchesTags;
@@ -565,8 +566,8 @@ function App() {
     result.sort((a, b) => {
       let comparison = 0;
       
-      // 如果是按相关性排序且有搜索词，使用搜索评分
-      if (sortBy === 'relevance' && searchTerm && searchResults.length > 0) {
+      // 如果是按相关性排序且有搜索结果，使用搜索评分
+      if (sortBy === 'relevance' && searchResults.length > 0) {
         const scoreA = searchResults.find(r => r.id === a.id)?.score || 0;
         const scoreB = searchResults.find(r => r.id === b.id)?.score || 0;
         comparison = scoreB - scoreA; // 评分高的排在前面
@@ -600,7 +601,7 @@ function App() {
     });
 
     return result;
-  }, [repos, searchTerm, selectedLanguage, selectedTag, sortBy, sortOrder, searchIndex]);
+  }, [repos, searchResults, selectedLanguage, selectedTag, sortBy, sortOrder]);
 
   // 显示的数据
   const displayedRepos = useMemo(() => {
@@ -610,15 +611,25 @@ function App() {
   // 搜索输入防抖
   useEffect(() => {
     const handler = setTimeout(() => {
-      setSearchTerm(inputValue);
+      if (searchWorker && inputValue.trim()) {
+        setIsSearching(true);
+        startTimeRef.current = performance.now();
+        searchWorker.postMessage({
+          type: 'SEARCH',
+          payload: { query: inputValue.trim(), limit: 100 }
+        });
+      } else {
+        setSearchResults([]);
+        setIsSearching(false);
+      }
     }, 300);
     return () => clearTimeout(handler);
-  }, [inputValue]);
+  }, [inputValue, searchWorker]);
 
   // 重置显示数量
   useEffect(() => {
     setDisplayedCount(itemsPerLoad);
-  }, [searchTerm, selectedLanguage, selectedTag, sortBy, sortOrder]);
+  }, [searchResults, selectedLanguage, selectedTag, sortBy, sortOrder]);
 
   // 无限滚动处理
   useEffect(() => {
@@ -777,7 +788,16 @@ function App() {
 
         {/* 结果统计 */}
         <div className="results-info">
-          Showing {displayedRepos.length} of {filteredAndSortedRepos.length} repositories
+          {isSearching ? (
+            <div className="searching-indicator">
+              <span>Searching...</span>
+              <span className="search-time">{searchTime.toFixed(2)}ms</span>
+            </div>
+          ) : (
+            <div className="results-count">
+              Showing {displayedRepos.length} of {filteredAndSortedRepos.length} repositories
+            </div>
+          )}
         </div>
 
         {/* 仓库列表 */}
