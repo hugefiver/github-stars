@@ -8,7 +8,23 @@ export default defineConfig({
     port: 3000
   },
   build: {
-    outDir: 'dist'
+    outDir: 'dist',
+    rollupOptions: {
+      // 确保 Web Worker 被正确处理
+      external: [],
+      output: {
+        format: 'es',
+        manualChunks: {
+          flexsearch: ['flexsearch'],
+        }
+      }
+    }
   },
-  base: './'
+  optimizeDeps: {
+    include: ['flexsearch']
+  },
+  base: './',
+  worker: {
+    format: 'es'
+  }
 })
