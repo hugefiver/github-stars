@@ -519,21 +519,24 @@ function App() {
         return repo;
       }).filter((repo): repo is Repository => repo !== undefined);
     } else {
-      // 如果没有搜索词，使用原始数据进行过滤
-      result = repos.filter(repo => {
-        // 语言过滤
-        const matchesLanguage =
-          !selectedLanguage ||
-          repo.language === selectedLanguage;
-
-        // 标签过滤 - 仓库必须包含所有选中的标签
-        const matchesTags =
-          selectedTag.length === 0 ||
-          (repo.topics && selectedTag.every(tag => repo.topics.includes(tag)));
-
-        return matchesLanguage && matchesTags;
-      });
+      // 如果没有搜索词，使用原始数据
+      result = repos;
     }
+
+    // 应用语言和标签过滤（无论是否有搜索结果）
+    result = result.filter(repo => {
+      // 语言过滤
+      const matchesLanguage =
+        !selectedLanguage ||
+        repo.language === selectedLanguage;
+
+      // 标签过滤 - 仓库必须包含所有选中的标签
+      const matchesTags =
+        selectedTag.length === 0 ||
+        (repo.topics && selectedTag.every(tag => repo.topics.includes(tag)));
+
+      return matchesLanguage && matchesTags;
+    });
 
     // 排序
     result.sort((a, b) => {
