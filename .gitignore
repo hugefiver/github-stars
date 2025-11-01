@@ -4,3 +4,6 @@ node_modules/
 /docs/
 /dist/
 /data/
+
+# npm lock file (project uses pnpm)
+package-lock.json
