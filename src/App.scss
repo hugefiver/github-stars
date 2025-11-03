@@ -123,10 +123,15 @@ $focus-shadow: 0 0 0 3px rgba(3, 102, 214, 0.3);
   border-radius: $border-radius;
 }
 
-// Search box
-.search-box {
-  flex: 1;
-  min-width: 250px;
+// Search input container
+.search-input-container {
+  width: 100%;
+  max-width: 90%;
+  margin: 0 auto;
+  
+  @media (max-width: 768px) {
+    min-width: 320px;
+  }
 }
 
 .search-input {
@@ -147,8 +152,9 @@ $focus-shadow: 0 0 0 3px rgba(3, 102, 214, 0.3);
 // Filters
 .filters {
   display: flex;
-  gap: 10px;
   flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
 }
 
 // Hide details toggle

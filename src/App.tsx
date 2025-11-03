@@ -693,7 +693,7 @@ function App() {
       <main className="main">
         {/* 搜索和过滤区域 */}
         <div className="controls">
-          <div className="search-box">
+          <div className="search-input-container">
             <input
               type="text"
               placeholder={t('search.placeholder', 'Search repositories...')}
