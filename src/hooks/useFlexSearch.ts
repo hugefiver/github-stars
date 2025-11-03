@@ -1,6 +1,15 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import FlexSearch, {Index} from 'flexsearch';
 import { Repository } from '../types';
+import { parseQuery } from '../lib/query-parser';
+
+interface ParsedQuery {
+  query: string; // 主搜索词，例如 'xyz'
+  fields: { [key: string]: string | string[] | ParsedQuery[] }; // 例如 { tag: ['abc', 'def'] } 或 { tag: [ParsedQuery, ParsedQuery] } 用于嵌套
+  booleanOps: { [key: string]: 'AND' | 'OR' | 'NOT' }; // 处理字段之间的布尔逻辑
+  sortBy: string | null; // 例如 'repo_name'
+  sortOrder: 'asc' | 'desc' | null; // 例如 'asc'
+}
 
 interface SearchDocument {
   id: number;
@@ -104,10 +113,210 @@ export const useFlexSearch = (repositories: Repository[]) => {
     startTimeRef.current = performance.now();
 
     try {
-      // 执行搜索
-      const results = searchIndex.search(searchTerm.trim(), {
-        limit: 100
+      // 解析查询字符串
+      const parsedQuery: ParsedQuery = parseQuery(searchTerm.trim());
+      
+      // 构建字段查询条件
+      const fieldConditions: { [key: string]: string | string[] | ParsedQuery[] } = {};
+      Object.keys(parsedQuery.fields).forEach(field => {
+        const value = parsedQuery.fields[field];
+        // 将字段映射到仓库属性
+        let repoField = field;
+        if (field === 'tag' || field === 'topic') {
+          repoField = 'topics';
+        } else if (field === 'lang') {
+          repoField = 'language';
+        } else if (field === 'desc') {
+          repoField = 'description';
+        } else if (field === 'name') {
+          repoField = 'full_name';
+        }
+        
+        (fieldConditions as any)[repoField] = value;
       });
+
+      // 执行搜索
+      let results: number[] = [];
+      
+      // 如果有字段查询条件，需要过滤
+      if (Object.keys(fieldConditions).length > 0) {
+        // 先获取所有可能匹配的ID
+        const allResults = searchIndex.search(parsedQuery.query || '*', {
+          limit: 1000 // 增加限制以获取更多结果进行过滤
+        }) as number[];
+        
+        // 根据字段条件过滤结果
+        results = allResults.filter((id: number) => {
+          const repo = repositories.find((r: Repository) => r.id === id);
+          if (!repo) return false;
+          
+          // 检查所有字段条件
+          for (const [field, value] of Object.entries(fieldConditions)) {
+            const repoValue = (repo as any)[field];
+            
+            // 检查值是否是嵌套查询
+            if (Array.isArray(value) && value.length > 0 && typeof value[0] === 'object' && value[0] !== null && !Array.isArray(value[0])) {
+              // 这是嵌套查询，需要特殊处理
+              const nestedQueries = value as ParsedQuery[];
+              const op = parsedQuery.booleanOps[field] || 'OR';
+              
+              // 对每个嵌套查询进行评估
+              const nestedResults = nestedQueries.map(nestedQuery => {
+                // 为嵌套查询创建一个临时的字段条件
+                const nestedFieldConditions: { [key: string]: string | string[] } = {};
+                Object.keys(nestedQuery.fields).forEach(nestedField => {
+                  const nestedValue = nestedQuery.fields[nestedField];
+                  // 将字段映射到仓库属性
+                  let nestedRepoField = nestedField;
+                  if (nestedField === 'tag' || nestedField === 'topic') {
+                    nestedRepoField = 'topics';
+                  } else if (nestedField === 'lang') {
+                    nestedRepoField = 'language';
+                  } else if (nestedField === 'desc') {
+                    nestedRepoField = 'description';
+                  } else if (nestedField === 'name') {
+                    nestedRepoField = 'full_name';
+                  }
+                  
+                  // 确保nestedValue是字符串或字符串数组
+                  if (typeof nestedValue === 'string') {
+                    nestedFieldConditions[nestedRepoField] = nestedValue;
+                  } else if (Array.isArray(nestedValue) && nestedValue.every(v => typeof v === 'string')) {
+                    nestedFieldConditions[nestedRepoField] = nestedValue as string[];
+                  }
+                });
+                
+                // 检查嵌套查询的所有字段条件
+                for (const [nestedField, nestedValue] of Object.entries(nestedFieldConditions)) {
+                  const nestedRepoValue = (repo as any)[nestedField];
+                  
+                  if (Array.isArray(nestedValue)) {
+                    // 数组值处理
+                    const nestedOp = nestedQuery.booleanOps[nestedField] || 'OR';
+                    if (nestedOp === 'AND') {
+                      // AND: 所有值都必须匹配
+                      return nestedValue.every(v => {
+                        if (typeof v === 'string') {
+                          return Array.isArray(nestedRepoValue) ? nestedRepoValue.includes(v) :
+                          nestedRepoValue && nestedRepoValue.toString().toLowerCase().includes(v.toLowerCase());
+                        }
+                        return false; // 如果v不是字符串，返回false
+                      });
+                    } else if (nestedOp === 'OR') {
+                      // OR: 任意一个值匹配即可
+                      return nestedValue.some(v => {
+                        if (typeof v === 'string') {
+                          return Array.isArray(nestedRepoValue) ? nestedRepoValue.includes(v) :
+                          nestedRepoValue && nestedRepoValue.toString().toLowerCase().includes(v.toLowerCase());
+                        }
+                        return false; // 如果v不是字符串，返回false
+                      });
+                    } else if (nestedOp === 'NOT') {
+                      // NOT: 不能包含任何值
+                      return !nestedValue.some(v => {
+                        if (typeof v === 'string') {
+                          return Array.isArray(nestedRepoValue) ? nestedRepoValue.includes(v) :
+                          nestedRepoValue && nestedRepoValue.toString().toLowerCase().includes(v.toLowerCase());
+                        }
+                        return true; // 如果v不是字符串，返回true（因为不匹配）
+                      });
+                    }
+                  } else {
+                    // 单个值处理
+                    if (typeof nestedValue === 'string') {
+                      if (Array.isArray(nestedRepoValue)) {
+                        return nestedRepoValue.includes(nestedValue);
+                      } else {
+                        return nestedRepoValue && nestedRepoValue.toString().toLowerCase().includes(nestedValue.toLowerCase());
+                      }
+                    }
+                    return false; // 如果nestedValue不是字符串，返回false
+                  }
+                }
+                
+                // 如果没有字段条件，默认为匹配
+                return true;
+              });
+              
+              // 根据操作符评估嵌套查询结果
+              if (op === 'AND') {
+                if (!nestedResults.every(r => r)) {
+                  return false;
+                }
+              } else if (op === 'OR') {
+                if (!nestedResults.some(r => r)) {
+                  return false;
+                }
+              } else if (op === 'NOT') {
+                if (nestedResults.some(r => r)) {
+                  return false;
+                }
+              }
+            } else if (Array.isArray(value)) {
+              // 数组值处理
+              const op = parsedQuery.booleanOps[field] || 'OR';
+              if (op === 'AND') {
+                // AND: 所有值都必须匹配
+                if (!value.every(v => {
+                  if (typeof v === 'string') {
+                    return Array.isArray(repoValue) ? repoValue.includes(v) :
+                    repoValue && repoValue.toString().toLowerCase().includes(v.toLowerCase());
+                  }
+                  return true; // 如果v不是字符串，返回true（因为不匹配）
+                })) {
+                  return false;
+                }
+              } else if (op === 'OR') {
+                // OR: 任意一个值匹配即可
+                if (!value.some(v => {
+                  if (typeof v === 'string') {
+                    return Array.isArray(repoValue) ? repoValue.includes(v) :
+                    repoValue && repoValue.toString().toLowerCase().includes(v.toLowerCase());
+                  }
+                  return false; // 如果v不是字符串，返回false
+                })) {
+                  return false;
+                }
+              } else if (op === 'NOT') {
+                // NOT: 不能包含任何值
+                if (value.some(v => {
+                  if (typeof v === 'string') {
+                    return Array.isArray(repoValue) ? repoValue.includes(v) :
+                    repoValue && repoValue.toString().toLowerCase().includes(v.toLowerCase());
+                  }
+                  return false; // 如果v不是字符串，返回false
+                })) {
+                  return false;
+                }
+              }
+            } else {
+              // 单个值处理
+              if (typeof value === 'string') {
+                if (Array.isArray(repoValue)) {
+                  if (!repoValue.includes(value)) {
+                    return false;
+                  }
+                } else {
+                  if (!repoValue || !repoValue.toString().toLowerCase().includes(value.toLowerCase())) {
+                    return false;
+                  }
+                }
+              }
+              // 如果value不是字符串，忽略这个条件
+            }
+          }
+          
+          return true;
+        });
+        
+        // 限制结果数量
+        results = results.slice(0, 100);
+      } else {
+        // 没有字段查询条件，直接搜索
+        results = searchIndex.search(parsedQuery.query || '*', {
+          limit: 100
+        }) as number[];
+      }
 
       // 处理搜索结果 - Index 模式只返回 ID 数组
       let processedResults: SearchResult[] = [];
@@ -138,6 +347,50 @@ export const useFlexSearch = (repositories: Repository[]) => {
             score: 1
           };
         }).filter(result => result.id !== undefined); // 过滤掉无效结果
+      }
+
+      // 根据排序字段对结果进行排序
+      if (parsedQuery.sortBy) {
+        processedResults.sort((a, b) => {
+          let comparison = 0;
+          
+          // 获取排序字段的值
+          let sortFieldA, sortFieldB;
+          
+          switch (parsedQuery.sortBy) {
+            case 'repo_name':
+            case 'name':
+              sortFieldA = a.full_name.toLowerCase();
+              sortFieldB = b.full_name.toLowerCase();
+              break;
+            case 'lang':
+            case 'language':
+              sortFieldA = (a.language || '').toLowerCase();
+              sortFieldB = (b.language || '').toLowerCase();
+              break;
+            case 'stars':
+              sortFieldA = a.id; // 使用ID作为近似值，因为我们没有直接的star数
+              sortFieldB = b.id;
+              break;
+            default:
+              // 尝试从对象中获取字段值
+              sortFieldA = (a as any)[parsedQuery.sortBy as keyof SearchResult];
+              sortFieldB = (b as any)[parsedQuery.sortBy as keyof SearchResult];
+          }
+          
+          // 处理比较
+          if (typeof sortFieldA === 'string' && typeof sortFieldB === 'string') {
+            comparison = sortFieldA.localeCompare(sortFieldB);
+          } else if (typeof sortFieldA === 'number' && typeof sortFieldB === 'number') {
+            comparison = sortFieldA - sortFieldB;
+          } else {
+            // 转换为字符串进行比较
+            comparison = (sortFieldA || '').toString().localeCompare((sortFieldB || '').toString());
+          }
+          
+          // 应用排序方向
+          return parsedQuery.sortOrder === 'desc' ? -comparison : comparison;
+        });
       }
 
       const endTime = performance.now();
