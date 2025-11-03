@@ -126,8 +126,8 @@ $focus-shadow: 0 0 0 3px rgba(3, 102, 214, 0.3);
 // Search input container
 .search-input-container {
   width: 100%;
-  max-width: 90%;
-  margin: 0 auto;
+  max-width: 100%;
+  margin: 0;
   
   @media (max-width: 768px) {
     min-width: 320px;
