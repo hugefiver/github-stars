@@ -366,8 +366,11 @@ function App() {
       
       debouncedSearch(inputValue);
     } else {
-      // 如果输入为空，清空搜索结果
-      // 但不直接设置searchResults，因为那是Hook的内部状态
+      // 如果输入为空，清空搜索结果并重置相关状态
+      setSearchResults([]);
+      setIsSearching(false);
+      setSearchTime(0);
+      setSearchError(null);
     }
   }, [inputValue, debouncedSearch]);
 
