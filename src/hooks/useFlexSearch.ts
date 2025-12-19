@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import FlexSearch, {Index} from 'flexsearch';
 import { Repository } from '../types';
 import { parseQuery } from '../lib/query-parser';
@@ -418,7 +418,7 @@ export const useFlexSearch = (repositories: Repository[]) => {
   }, [searchIndex]);
 
   // 清除搜索（取消防抖并清空结果）
-  const clearSearch = () => {
+  const clearSearch = useCallback(() => {
     if (searchTimeoutRef.current) {
       clearTimeout(searchTimeoutRef.current);
       searchTimeoutRef.current = null;
@@ -427,7 +427,7 @@ export const useFlexSearch = (repositories: Repository[]) => {
     setIsSearching(false);
     setSearchTime(0);
     setSearchError(null);
-  };
+  }, []);
 
   // 清理防抖定时器
   useEffect(() => {
