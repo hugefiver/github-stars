@@ -111,7 +111,7 @@ export const useFlexSearch = (repositories: Repository[]) => {
     setIsSearching(true);
     setSearchError(null);
     startTimeRef.current = performance.now();
-    const resultLimit = Math.max(repositories.length, 100);
+    const searchResultLimit = Math.min(Math.max(repositories.length, 100), 5000);
 
     try {
       // 解析查询字符串
@@ -143,7 +143,7 @@ export const useFlexSearch = (repositories: Repository[]) => {
       if (Object.keys(fieldConditions).length > 0) {
         // 先获取所有可能匹配的ID
         const allResults = searchIndex.search(parsedQuery.query || '*', {
-          limit: resultLimit
+          limit: searchResultLimit
         }) as number[];
         
         // 根据字段条件过滤结果
@@ -312,7 +312,7 @@ export const useFlexSearch = (repositories: Repository[]) => {
       } else {
         // 没有字段查询条件，直接搜索
         results = searchIndex.search(parsedQuery.query || '*', {
-          limit: resultLimit
+          limit: searchResultLimit
         }) as number[];
       }
 

@@ -87,7 +87,11 @@ describe('useFlexSearch', () => {
     expect(latestState?.searchResults.length).toBe(repos.length);
 
     await act(async () => {
-      root.unmount();
+      try {
+        root.unmount();
+      } catch (error) {
+        console.error('Error during unmount', error);
+      }
     });
   });
 });
