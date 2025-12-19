@@ -142,7 +142,7 @@ export const useFlexSearch = (repositories: Repository[]) => {
       if (Object.keys(fieldConditions).length > 0) {
         // 先获取所有可能匹配的ID
         const allResults = searchIndex.search(parsedQuery.query || '*', {
-          limit: 1000 // 增加限制以获取更多结果进行过滤
+          limit: 5000 // 增加限制以获取更多结果进行过滤
         }) as number[];
         
         // 根据字段条件过滤结果
@@ -310,11 +310,11 @@ export const useFlexSearch = (repositories: Repository[]) => {
         });
         
         // 限制结果数量
-        results = results.slice(0, 100);
+        results = results.slice(0, 5000);
       } else {
         // 没有字段查询条件，直接搜索
         results = searchIndex.search(parsedQuery.query || '*', {
-          limit: 100
+          limit: 5000
         }) as number[];
       }
 
