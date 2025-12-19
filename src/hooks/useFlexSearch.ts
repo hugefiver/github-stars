@@ -417,6 +417,18 @@ export const useFlexSearch = (repositories: Repository[]) => {
     };
   }, [searchIndex]);
 
+  // 清除搜索（取消防抖并清空结果）
+  const clearSearch = () => {
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+      searchTimeoutRef.current = null;
+    }
+    setSearchResults([]);
+    setIsSearching(false);
+    setSearchTime(0);
+    setSearchError(null);
+  };
+
   // 清理防抖定时器
   useEffect(() => {
     return () => {
@@ -433,6 +445,7 @@ export const useFlexSearch = (repositories: Repository[]) => {
     searchTime,
     searchError,
     performSearch,
-    debouncedSearch
+    debouncedSearch,
+    clearSearch
   };
 };

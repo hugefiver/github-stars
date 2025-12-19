@@ -70,7 +70,7 @@ function App() {
   const [displayedCount, setDisplayedCount] = useAtom(displayedCountAtom);
   const [loadingMore, setLoadingMore] = useAtom(loadingMoreAtom);
 
-  const { searchIndex, searchResults: hookSearchResults, isSearching: hookIsSearching, searchTime: hookSearchTime, searchError: hookSearchError, debouncedSearch } = useFlexSearch(repos);
+  const { searchIndex, searchResults: hookSearchResults, isSearching: hookIsSearching, searchTime: hookSearchTime, searchError: hookSearchError, debouncedSearch, clearSearch } = useFlexSearch(repos);
   
   const [searchResults, setSearchResults] = useAtom(searchResultsAtom);
   const [isSearching, setIsSearching] = useAtom(isSearchingAtom);
@@ -366,13 +366,10 @@ function App() {
       
       debouncedSearch(inputValue);
     } else {
-      // 如果输入为空，清空搜索结果并重置相关状态
-      setSearchResults([]);
-      setIsSearching(false);
-      setSearchTime(0);
-      setSearchError(null);
+      // 如果输入为空，调用 clearSearch 取消防抖并清空搜索结果
+      clearSearch();
     }
-  }, [inputValue, debouncedSearch]);
+  }, [inputValue, debouncedSearch, clearSearch]);
 
   // 同步Hook的状态到组件状态
   useEffect(() => {
@@ -511,18 +508,22 @@ function App() {
       .sort((a, b) => b.count - a.count);
   }, [repos, selectedLanguage, selectedTag, searchResults]);
 
+  // 判断是否处于搜索模式（有输入内容）
+  const isInSearchMode = inputValue.trim().length > 0;
+
   // 过滤和排序数据
   const filteredAndSortedRepos = useMemo(() => {
     let result: Repository[] = [];
 
-    // 使用 Web Worker 搜索结果
-    if (searchResults.length > 0) {
+    // 判断是否处于搜索模式
+    if (isInSearchMode) {
+      // 有搜索输入时，使用搜索结果（可能为空）
       result = searchResults.map(result => {
         const repo = repos.find(r => r.id === result.id);
         return repo;
       }).filter((repo): repo is Repository => repo !== undefined);
     } else {
-      // 如果没有搜索词，使用原始数据
+      // 没有搜索输入时，使用原始数据
       result = repos;
     }
 
@@ -580,7 +581,7 @@ function App() {
     });
 
     return result;
-  }, [repos, searchResults, selectedLanguage, selectedTag, sortBy, sortOrder]);
+  }, [repos, searchResults, selectedLanguage, selectedTag, sortBy, sortOrder, isInSearchMode]);
 
   // 显示的数据
   const displayedRepos = useMemo(() => {
