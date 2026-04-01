@@ -1,55 +1,47 @@
-import * as fs from "fs";
-import * as path from "path";
-import { ProcessedRepository } from "../types/github";
+import * as fs from 'fs';
+import * as path from 'path';
+import { ProcessedRepository, SimplifiedRepository } from '../types/github';
+import { LanguageConnection, RepositoryTopicConnection } from '../types/graphql';
 
-// 递减请求大小的函数
 export function decrementRequestSize(currentSize: number, minSize: number): number {
   return Math.max(minSize, Math.floor(currentSize / 2));
 }
 
-// 处理语言数据
-export function processLanguages(languagesData: any): Record<string, { bytes: number; percentage: string; color?: string }> {
+export function processLanguages(
+  languagesData: LanguageConnection | null | undefined
+): Record<string, { bytes: number; percentage: string; color?: string }> {
   const languages: Record<string, { bytes: number; percentage: string; color?: string }> = {};
-  
-  if (languagesData?.edges && languagesData.totalSize && languagesData.totalSize > 0) {
-    const totalSize = languagesData.totalSize;
-    const langEdges = languagesData.edges;
-    
-    if (langEdges) {
-      for (const langEdge of langEdges) {
-        if (!langEdge?.node) {
-          console.warn('Skipping empty language edge');
-          continue;
-        }
-        
-        const languageName = langEdge.node.name;
-        const size = langEdge.size;
-        languages[languageName] = {
-          bytes: size,
-          percentage: ((size / totalSize) * 100).toFixed(2),
-          color: langEdge.node.color ?? undefined
-        };
-      }
-    }
+
+  if (!languagesData?.edges || !languagesData.totalSize || languagesData.totalSize <= 0) {
+    return languages;
   }
-  
+
+  const totalSize = languagesData.totalSize;
+  for (const langEdge of languagesData.edges) {
+    if (!langEdge?.node) continue;
+
+    languages[langEdge.node.name] = {
+      bytes: langEdge.size,
+      percentage: ((langEdge.size / totalSize) * 100).toFixed(2),
+      color: langEdge.node.color ?? undefined,
+    };
+  }
+
   return languages;
 }
 
-// 处理topics
-export function processTopics(topicsData: any): string[] {
-  return (topicsData ?
-    topicsData.nodes?.flatMap((n: any) => n?.topic?.name).filter((name: string): name is string => name !== undefined) : []) ?? [];
+export function processTopics(topicsData: RepositoryTopicConnection | null | undefined): string[] {
+  if (!topicsData?.nodes) return [];
+  return topicsData.nodes
+    .filter((n): n is NonNullable<typeof n> => n != null)
+    .map((n) => n.topic.name)
+    .filter((name): name is string => name !== undefined);
 }
 
-// 根据 id 去重
 export function deduplicateRepositories(repos: ProcessedRepository[]): ProcessedRepository[] {
-  return repos.filter((repo, index, self) =>
-    index === self.findIndex(r => r.id === repo.id)
-  );
+  return repos.filter((repo, index, self) => index === self.findIndex((r) => r.id === repo.id));
 }
 
-// 确保目录存在
 export function ensureDirectoryExists(filePath: string): void {
   const dir = path.dirname(filePath);
   if (!fs.existsSync(dir)) {
@@ -57,9 +49,8 @@ export function ensureDirectoryExists(filePath: string): void {
   }
 }
 
-// 生成简化版本的仓库数据
-export function generateSimplifiedRepos(repos: ProcessedRepository[]): any[] {
-  return repos.map(repo => ({
+export function generateSimplifiedRepos(repos: ProcessedRepository[]): SimplifiedRepository[] {
+  return repos.map((repo) => ({
     id: repo.id,
     name: repo.name,
     full_name: repo.full_name,
@@ -81,6 +72,6 @@ export function generateSimplifiedRepos(repos: ProcessedRepository[]): any[] {
     isFork: repo.isFork,
     isMirror: repo.isMirror,
     parent: repo.parent,
-    pushedAt: repo.pushedAt ?? null
+    pushedAt: repo.pushedAt ?? null,
   }));
 }

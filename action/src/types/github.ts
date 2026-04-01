@@ -11,7 +11,7 @@ export interface GraphQLResponse {
     starredRepositories: StarredRepositoryConnection;
   };
   status?: number;
-  headers?: any;
+  headers?: Record<string, string>;
 }
 
 // 处理后的仓库接口
@@ -22,11 +22,14 @@ export interface ProcessedRepository {
   html_url: string;
   description: string | null;
   language: string | null;
-  languages: Record<string, {
-    bytes: number;
-    percentage: string;
-    color?: string;
-  }>;
+  languages: Record<
+    string,
+    {
+      bytes: number;
+      percentage: string;
+      color?: string;
+    }
+  >;
   stargazers_count: number;
   forks_count: number;
   updated_at: string;

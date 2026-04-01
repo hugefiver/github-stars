@@ -1,26 +1,9 @@
-import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import FlexSearch, {Index} from 'flexsearch';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import FlexSearch, { Index } from 'flexsearch';
 import { Repository } from '../types';
-import { parseQuery } from '../lib/query-parser';
+import { parseQuery, ParsedQuery } from '../lib/query-parser';
 
-interface ParsedQuery {
-  query: string; // 主搜索词，例如 'xyz'
-  fields: { [key: string]: string | string[] | ParsedQuery[] }; // 例如 { tag: ['abc', 'def'] } 或 { tag: [ParsedQuery, ParsedQuery] } 用于嵌套
-  booleanOps: { [key: string]: 'AND' | 'OR' | 'NOT' }; // 处理字段之间的布尔逻辑
-  sortBy: string | null; // 例如 'repo_name'
-  sortOrder: 'asc' | 'desc' | null; // 例如 'asc'
-}
-
-interface SearchDocument {
-  id: number;
-  name: string;
-  full_name: string;
-  description: string;
-  language: string;
-  topics: string;
-}
-
-interface SearchResult {
+export interface SearchResult {
   id: number;
   name: string;
   full_name: string;
@@ -30,394 +13,275 @@ interface SearchResult {
   score: number;
 }
 
+const FIELD_ALIASES: Record<string, keyof Repository> = {
+  tag: 'topics',
+  topic: 'topics',
+  lang: 'language',
+  language: 'language',
+  desc: 'description',
+  description: 'description',
+  name: 'full_name',
+  full_name: 'full_name',
+};
+
+function resolveField(field: string): keyof Repository {
+  return FIELD_ALIASES[field] ?? (field as keyof Repository);
+}
+
+function matchesFieldCondition(
+  repo: Repository,
+  repoField: keyof Repository,
+  value: string | string[],
+  operator: 'AND' | 'OR'
+): boolean {
+  const repoValue = repo[repoField];
+
+  if (typeof value === 'string') {
+    return matchSingleValue(repoValue, value);
+  }
+
+  switch (operator) {
+    case 'AND':
+      return value.every((v) => matchSingleValue(repoValue, v));
+    case 'OR':
+    default:
+      return value.some((v) => matchSingleValue(repoValue, v));
+  }
+}
+
+function matchSingleValue(repoValue: Repository[keyof Repository], expected: string): boolean {
+  if (Array.isArray(repoValue)) {
+    return repoValue.some(
+      (v) => typeof v === 'string' && v.toLowerCase() === expected.toLowerCase()
+    );
+  }
+  if (typeof repoValue === 'string') {
+    return repoValue.toLowerCase().includes(expected.toLowerCase());
+  }
+  if (repoValue != null) {
+    return String(repoValue).toLowerCase().includes(expected.toLowerCase());
+  }
+  return false;
+}
+
+function getSortValue(result: SearchResult, field: string): string | number {
+  switch (field) {
+    case 'repo_name':
+    case 'name':
+    case 'full_name':
+      return result.full_name.toLowerCase();
+    case 'lang':
+    case 'language':
+      return (result.language || '').toLowerCase();
+    case 'description':
+      return (result.description || '').toLowerCase();
+    case 'id':
+      return result.id;
+    case 'score':
+      return result.score;
+    default:
+      return '';
+  }
+}
+
+function sortSearchResults(
+  results: SearchResult[],
+  sortBy: string | null,
+  sortOrder: 'asc' | 'desc' | null
+): SearchResult[] {
+  if (!sortBy) return results;
+
+  const sorted = [...results];
+  sorted.sort((a, b) => {
+    const fieldA = getSortValue(a, sortBy);
+    const fieldB = getSortValue(b, sortBy);
+
+    const cmp =
+      typeof fieldA === 'number' && typeof fieldB === 'number'
+        ? fieldA - fieldB
+        : String(fieldA).localeCompare(String(fieldB));
+
+    return sortOrder === 'desc' ? -cmp : cmp;
+  });
+
+  return sorted;
+}
+
+function buildRepoMap(repos: Repository[]): Map<number, Repository> {
+  const map = new Map<number, Repository>();
+  for (const repo of repos) {
+    map.set(repo.id, repo);
+  }
+  return map;
+}
+
+function toSearchResult(repo: Repository): SearchResult {
+  return {
+    id: repo.id,
+    name: repo.name || '',
+    full_name: repo.full_name || '',
+    description: repo.description || '',
+    language: repo.language || '',
+    topics: Array.isArray(repo.topics) ? repo.topics : [],
+    score: 1,
+  };
+}
+
+const SEARCH_LIMIT = 5000;
+const DEBOUNCE_MS = 300;
+
 export const useFlexSearch = (repositories: Repository[]) => {
-  const [searchIndex, setSearchIndex] = useState<any>(null);
+  const [searchIndex, setSearchIndex] = useState<Index | null>(null);
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
-  const [isSearching, setIsSearching] = useState<boolean>(false);
-  const [searchTime, setSearchTime] = useState<number>(0);
+  const [isSearching, setIsSearching] = useState(false);
+  const [searchTime, setSearchTime] = useState(0);
   const [searchError, setSearchError] = useState<string | null>(null);
-  
-  const startTimeRef = useRef<number>(0);
+
+  const startTimeRef = useRef(0);
   const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // 初始化搜索索引
-  useEffect(() => {
-    const initializeSearch = async () => {
-      try {        
-        // 创建搜索索引配置
-        const index = new FlexSearch.Index({
-          tokenize: "forward",
-          context: true
-        });
-        
-        setSearchIndex(index);
-        
-        // 如果已有数据，立即构建索引
-        if (repositories.length > 0) {
-          buildIndex(index, repositories);
-        }
-      } catch (error) {
-        console.error('Error initializing search:', error);
-        setSearchError('Failed to initialize search');
-      }
-    };
-    
-    initializeSearch();
-    
-    // 清理函数
-    return () => {
-      if (searchIndex) {
-        searchIndex.destroy?.();
-      }
-    };
+  const repositoriesRef = useRef(repositories);
+  repositoriesRef.current = repositories;
+
+  const searchIndexRef = useRef(searchIndex);
+  searchIndexRef.current = searchIndex;
+
+  const buildIndex = useCallback((index: Index, repos: Repository[]) => {
+    index.clear();
+    for (const repo of repos) {
+      const content = [
+        repo.name ?? '',
+        repo.full_name ?? '',
+        repo.description ?? '',
+        repo.language ?? '',
+        Array.isArray(repo.topics) ? repo.topics.join(' ') : '',
+      ].join(' ');
+      index.add(repo.id, content);
+    }
   }, []);
 
-  // 构建搜索索引的辅助函数
-  const buildIndex = (index: Index, repos: Repository[]) => {
-    // 清空现有索引
-    index.clear();
-    
-    // 批量添加数据到索引
-    repos.forEach((repo: Repository) => {
-      // 确保所有字段都是字符串类型
-      const content = [
-        String(repo.name || ''),
-        String(repo.full_name || ''),
-        String(repo.description || ''),
-        String(repo.language || ''),
-        Array.isArray(repo.topics) ? repo.topics.join(' ') : ''
-      ].join(' ');
-      
-      // 使用 id 作为文档 ID 添加到索引
-      index.add(repo.id, content);
-    });
-  };
+  useEffect(() => {
+    const index = new FlexSearch.Index({ tokenize: 'forward', context: true });
+    setSearchIndex(index);
 
-  // 当数据变化时，重新构建索引
+    if (repositories.length > 0) {
+      buildIndex(index, repositories);
+    }
+
+    return () => {
+      try {
+        index.destroy?.();
+      } catch {
+        // FlexSearch 0.8 has a bug in destroy() with context: true
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   useEffect(() => {
     if (searchIndex && repositories.length > 0) {
       buildIndex(searchIndex, repositories);
     }
-  }, [repositories, searchIndex]);
+  }, [repositories, searchIndex, buildIndex]);
 
-  // 执行搜索
-  const performSearch = async (searchTerm: string) => {
-    if (!searchIndex || !searchTerm.trim()) {
-      setSearchResults([]);
-      setIsSearching(false);
-      return;
-    }
+  const performSearch = useCallback(
+    (searchTerm: string) => {
+      const index = searchIndexRef.current;
+      const repos = repositoriesRef.current;
 
-    setIsSearching(true);
-    setSearchError(null);
-    startTimeRef.current = performance.now();
+      if (!index || !searchTerm.trim()) {
+        setSearchResults([]);
+        setIsSearching(false);
+        return;
+      }
 
-    try {
-      // 解析查询字符串
-      const parsedQuery: ParsedQuery = parseQuery(searchTerm.trim());
-      
-      // 构建字段查询条件
-      const fieldConditions: { [key: string]: string | string[] | ParsedQuery[] } = {};
-      Object.keys(parsedQuery.fields).forEach(field => {
-        const value = parsedQuery.fields[field];
-        // 将字段映射到仓库属性
-        let repoField = field;
-        if (field === 'tag' || field === 'topic') {
-          repoField = 'topics';
-        } else if (field === 'lang') {
-          repoField = 'language';
-        } else if (field === 'desc') {
-          repoField = 'description';
-        } else if (field === 'name') {
-          repoField = 'full_name';
+      setIsSearching(true);
+      setSearchError(null);
+      startTimeRef.current = performance.now();
+
+      try {
+        const parsed: ParsedQuery = parseQuery(searchTerm.trim());
+
+        const fieldEntries = Object.entries(parsed.fields).map(
+          ([field, value]) =>
+            [resolveField(field), value, parsed.booleanOps[field] ?? 'AND'] as const
+        );
+
+        const negatedEntries = Object.entries(parsed.negatedFields).map(
+          ([field, value]) => [resolveField(field), value] as const
+        );
+
+        let ids: number[];
+
+        if (parsed.query) {
+          ids = index.search(parsed.query, { limit: SEARCH_LIMIT }) as number[];
+        } else if (fieldEntries.length > 0 || negatedEntries.length > 0) {
+          ids = repos.map((r) => r.id);
+        } else {
+          setSearchResults([]);
+          setIsSearching(false);
+          return;
         }
-        
-        (fieldConditions as any)[repoField] = value;
-      });
 
-      // 执行搜索
-      let results: number[] = [];
-      
-      // 如果有字段查询条件，需要过滤
-      if (Object.keys(fieldConditions).length > 0) {
-        // 先获取所有可能匹配的ID
-        const allResults = searchIndex.search(parsedQuery.query || '*', {
-          limit: 5000 // 增加限制以获取更多结果进行过滤
-        }) as number[];
-        
-        // 根据字段条件过滤结果
-        results = allResults.filter((id: number) => {
-          const repo = repositories.find((r: Repository) => r.id === id);
-          if (!repo) return false;
-          
-          // 检查所有字段条件
-          for (const [field, value] of Object.entries(fieldConditions)) {
-            const repoValue = (repo as any)[field];
-            
-            // 检查值是否是嵌套查询
-            if (Array.isArray(value) && value.length > 0 && typeof value[0] === 'object' && value[0] !== null && !Array.isArray(value[0])) {
-              // 这是嵌套查询，需要特殊处理
-              const nestedQueries = value as ParsedQuery[];
-              const op = parsedQuery.booleanOps[field] || 'OR';
-              
-              // 对每个嵌套查询进行评估
-              const nestedResults = nestedQueries.map(nestedQuery => {
-                // 为嵌套查询创建一个临时的字段条件
-                const nestedFieldConditions: { [key: string]: string | string[] } = {};
-                Object.keys(nestedQuery.fields).forEach(nestedField => {
-                  const nestedValue = nestedQuery.fields[nestedField];
-                  // 将字段映射到仓库属性
-                  let nestedRepoField = nestedField;
-                  if (nestedField === 'tag' || nestedField === 'topic') {
-                    nestedRepoField = 'topics';
-                  } else if (nestedField === 'lang') {
-                    nestedRepoField = 'language';
-                  } else if (nestedField === 'desc') {
-                    nestedRepoField = 'description';
-                  } else if (nestedField === 'name') {
-                    nestedRepoField = 'full_name';
-                  }
-                  
-                  // 确保nestedValue是字符串或字符串数组
-                  if (typeof nestedValue === 'string') {
-                    nestedFieldConditions[nestedRepoField] = nestedValue;
-                  } else if (Array.isArray(nestedValue) && nestedValue.every(v => typeof v === 'string')) {
-                    nestedFieldConditions[nestedRepoField] = nestedValue as string[];
-                  }
-                });
-                
-                // 检查嵌套查询的所有字段条件
-                for (const [nestedField, nestedValue] of Object.entries(nestedFieldConditions)) {
-                  const nestedRepoValue = (repo as any)[nestedField];
-                  
-                  if (Array.isArray(nestedValue)) {
-                    // 数组值处理
-                    const nestedOp = nestedQuery.booleanOps[nestedField] || 'OR';
-                    if (nestedOp === 'AND') {
-                      // AND: 所有值都必须匹配
-                      return nestedValue.every(v => {
-                        if (typeof v === 'string') {
-                          return Array.isArray(nestedRepoValue) ? nestedRepoValue.includes(v) :
-                          nestedRepoValue && nestedRepoValue.toString().toLowerCase().includes(v.toLowerCase());
-                        }
-                        return false; // 如果v不是字符串，返回false
-                      });
-                    } else if (nestedOp === 'OR') {
-                      // OR: 任意一个值匹配即可
-                      return nestedValue.some(v => {
-                        if (typeof v === 'string') {
-                          return Array.isArray(nestedRepoValue) ? nestedRepoValue.includes(v) :
-                          nestedRepoValue && nestedRepoValue.toString().toLowerCase().includes(v.toLowerCase());
-                        }
-                        return false; // 如果v不是字符串，返回false
-                      });
-                    } else if (nestedOp === 'NOT') {
-                      // NOT: 不能包含任何值
-                      return !nestedValue.some(v => {
-                        if (typeof v === 'string') {
-                          return Array.isArray(nestedRepoValue) ? nestedRepoValue.includes(v) :
-                          nestedRepoValue && nestedRepoValue.toString().toLowerCase().includes(v.toLowerCase());
-                        }
-                        return true; // 如果v不是字符串，返回true（因为不匹配）
-                      });
-                    }
-                  } else {
-                    // 单个值处理
-                    if (typeof nestedValue === 'string') {
-                      if (Array.isArray(nestedRepoValue)) {
-                        return nestedRepoValue.includes(nestedValue);
-                      } else {
-                        return nestedRepoValue && nestedRepoValue.toString().toLowerCase().includes(nestedValue.toLowerCase());
-                      }
-                    }
-                    return false; // 如果nestedValue不是字符串，返回false
-                  }
-                }
-                
-                // 如果没有字段条件，默认为匹配
-                return true;
-              });
-              
-              // 根据操作符评估嵌套查询结果
-              if (op === 'AND') {
-                if (!nestedResults.every(r => r)) {
-                  return false;
-                }
-              } else if (op === 'OR') {
-                if (!nestedResults.some(r => r)) {
-                  return false;
-                }
-              } else if (op === 'NOT') {
-                if (nestedResults.some(r => r)) {
-                  return false;
-                }
-              }
-            } else if (Array.isArray(value)) {
-              // 数组值处理
-              const op = parsedQuery.booleanOps[field] || 'OR';
-              if (op === 'AND') {
-                // AND: 所有值都必须匹配
-                if (!value.every(v => {
-                  if (typeof v === 'string') {
-                    return Array.isArray(repoValue) ? repoValue.includes(v) :
-                    repoValue && repoValue.toString().toLowerCase().includes(v.toLowerCase());
-                  }
-                  return true; // 如果v不是字符串，返回true（因为不匹配）
-                })) {
-                  return false;
-                }
-              } else if (op === 'OR') {
-                // OR: 任意一个值匹配即可
-                if (!value.some(v => {
-                  if (typeof v === 'string') {
-                    return Array.isArray(repoValue) ? repoValue.includes(v) :
-                    repoValue && repoValue.toString().toLowerCase().includes(v.toLowerCase());
-                  }
-                  return false; // 如果v不是字符串，返回false
-                })) {
-                  return false;
-                }
-              } else if (op === 'NOT') {
-                // NOT: 不能包含任何值
-                if (value.some(v => {
-                  if (typeof v === 'string') {
-                    return Array.isArray(repoValue) ? repoValue.includes(v) :
-                    repoValue && repoValue.toString().toLowerCase().includes(v.toLowerCase());
-                  }
-                  return false; // 如果v不是字符串，返回false
-                })) {
-                  return false;
-                }
-              }
-            } else {
-              // 单个值处理
-              if (typeof value === 'string') {
-                if (Array.isArray(repoValue)) {
-                  if (!repoValue.includes(value)) {
-                    return false;
-                  }
-                } else {
-                  if (!repoValue || !repoValue.toString().toLowerCase().includes(value.toLowerCase())) {
-                    return false;
-                  }
-                }
-              }
-              // 如果value不是字符串，忽略这个条件
-            }
-          }
-          
-          return true;
-        });
-        
-        // 限制结果数量
-        results = results.slice(0, 5000);
-      } else {
-        // 没有字段查询条件，直接搜索
-        results = searchIndex.search(parsedQuery.query || '*', {
-          limit: 5000
-        }) as number[];
+        const repoMap = buildRepoMap(repos);
+
+        let filtered: Repository[];
+
+        const hasFieldFilters = fieldEntries.length > 0 || negatedEntries.length > 0;
+
+        if (hasFieldFilters) {
+          filtered = ids.reduce<Repository[]>((acc, id) => {
+            const repo = repoMap.get(id);
+            if (!repo) return acc;
+
+            const matchesPositive = fieldEntries.every(([repoField, value, op]) =>
+              matchesFieldCondition(repo, repoField, value, op)
+            );
+            if (!matchesPositive) return acc;
+
+            const matchesNegated = negatedEntries.some(([repoField, value]) =>
+              matchesFieldCondition(repo, repoField, value, 'OR')
+            );
+            if (matchesNegated) return acc;
+
+            acc.push(repo);
+            return acc;
+          }, []);
+        } else {
+          filtered = ids.reduce<Repository[]>((acc, id) => {
+            const repo = repoMap.get(id);
+            if (repo) acc.push(repo);
+            return acc;
+          }, []);
+        }
+
+        let results = filtered.slice(0, SEARCH_LIMIT).map(toSearchResult);
+        results = sortSearchResults(results, parsed.sortBy, parsed.sortOrder);
+
+        setSearchResults(results);
+        setSearchTime(performance.now() - startTimeRef.current);
+      } catch (err) {
+        console.error('Search error:', err);
+        setSearchError('Search failed');
+      } finally {
+        setIsSearching(false);
       }
+    },
+    [] // stable: uses refs for mutable data
+  );
 
-      // 处理搜索结果 - Index 模式只返回 ID 数组
-      let processedResults: SearchResult[] = [];
-
-      if (results && Array.isArray(results)) {
-        // 根据 ID 查找原始仓库数据
-        processedResults = results.map((id: number) => {
-          const repo = repositories.find((r: Repository) => r.id === id);
-          if (repo) {
-            return {
-              id: repo.id,
-              name: repo.name || '',
-              full_name: repo.full_name || '',
-              description: repo.description || '',
-              language: repo.language || '',
-              topics: Array.isArray(repo.topics) ? repo.topics : [],
-              score: 1 // Index 模式不提供评分
-            };
-          }
-          // 如果找不到对应的仓库，返回空对象
-          return {
-            id,
-            name: '',
-            full_name: '',
-            description: '',
-            language: '',
-            topics: [],
-            score: 1
-          };
-        }).filter(result => result.id !== undefined); // 过滤掉无效结果
-      }
-
-      // 根据排序字段对结果进行排序
-      if (parsedQuery.sortBy) {
-        processedResults.sort((a, b) => {
-          let comparison = 0;
-          
-          // 获取排序字段的值
-          let sortFieldA, sortFieldB;
-          
-          switch (parsedQuery.sortBy) {
-            case 'repo_name':
-            case 'name':
-              sortFieldA = a.full_name.toLowerCase();
-              sortFieldB = b.full_name.toLowerCase();
-              break;
-            case 'lang':
-            case 'language':
-              sortFieldA = (a.language || '').toLowerCase();
-              sortFieldB = (b.language || '').toLowerCase();
-              break;
-            case 'stars':
-              sortFieldA = a.id; // 使用ID作为近似值，因为我们没有直接的star数
-              sortFieldB = b.id;
-              break;
-            default:
-              // 尝试从对象中获取字段值
-              sortFieldA = (a as any)[parsedQuery.sortBy as keyof SearchResult];
-              sortFieldB = (b as any)[parsedQuery.sortBy as keyof SearchResult];
-          }
-          
-          // 处理比较
-          if (typeof sortFieldA === 'string' && typeof sortFieldB === 'string') {
-            comparison = sortFieldA.localeCompare(sortFieldB);
-          } else if (typeof sortFieldA === 'number' && typeof sortFieldB === 'number') {
-            comparison = sortFieldA - sortFieldB;
-          } else {
-            // 转换为字符串进行比较
-            comparison = (sortFieldA || '').toString().localeCompare((sortFieldB || '').toString());
-          }
-          
-          // 应用排序方向
-          return parsedQuery.sortOrder === 'desc' ? -comparison : comparison;
-        });
-      }
-
-      const endTime = performance.now();
-      setSearchResults(processedResults);
-      setIsSearching(false);
-      setSearchTime(endTime - startTimeRef.current);
-    } catch (error) {
-      console.error('Search error:', error);
-      setIsSearching(false);
-      setSearchError('Search failed');
-    }
-  };
-
-  // 带防抖的搜索函数
-  const debouncedSearch = useMemo(() => {
-    return (searchTerm: string) => {
+  const debouncedSearch = useCallback(
+    (searchTerm: string) => {
       if (searchTimeoutRef.current) {
         clearTimeout(searchTimeoutRef.current);
       }
-
       searchTimeoutRef.current = setTimeout(() => {
         performSearch(searchTerm);
-      }, 300);
-    };
-  }, [searchIndex]);
+      }, DEBOUNCE_MS);
+    },
+    [performSearch]
+  );
 
-  // 清除搜索（取消防抖并清空结果）
   const clearSearch = useCallback(() => {
     if (searchTimeoutRef.current) {
       clearTimeout(searchTimeoutRef.current);
@@ -429,7 +293,6 @@ export const useFlexSearch = (repositories: Repository[]) => {
     setSearchError(null);
   }, []);
 
-  // 清理防抖定时器
   useEffect(() => {
     return () => {
       if (searchTimeoutRef.current) {
@@ -439,13 +302,11 @@ export const useFlexSearch = (repositories: Repository[]) => {
   }, []);
 
   return {
-    searchIndex,
     searchResults,
     isSearching,
     searchTime,
     searchError,
-    performSearch,
     debouncedSearch,
-    clearSearch
+    clearSearch,
   };
 };

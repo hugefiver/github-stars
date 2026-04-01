@@ -2,78 +2,41 @@ name: Fetch Starred Repositories
 
 on:
   schedule:
-    # 每天 UTC 时间 0 点运行
     - cron: '0 0 * * *'
-  workflow_dispatch: # 允许手动触发
+  workflow_dispatch:
     inputs:
       batch-size:
         description: 'Number of repositories to fetch per API call (max 100)'
         required: false
         default: '50'
   push:
-    branches:
-      - master
-    # paths-ignore:
-    #   - 'docs/**'
+    branches: [master]
     paths:
       - '.github/workflows/fetch-starred-repos.yml'
       - 'action/**'
 
 jobs:
-  fetch-starred-repos:
+  fetch-data:
     runs-on: ubuntu-latest
-    
-    permissions: 
-      contents: write 
-      pages: write 
-      id-token: write
+    permissions:
+      contents: read
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-        
+
       - name: Fetch starred repositories
         uses: ./action
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           username: ${{ github.actor }}
           output-file: ./docs/data/starred-repos.json
-          # 在生产环境中也会生成简化版本文件（包含languages字段）
           simple-output-file: ./docs/data/starred-repos-simple.json
           batch-size: ${{ github.event.inputs.batch-size || '50' }}
-          
-      - name: Upload data as artifact
+
+      - name: Upload data artifact
         uses: actions/upload-artifact@v4
         with:
           name: starred-repos-data
           path: ./docs/data/
-          retention-days: 30
-          
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v3
-        with:
-          version: 10
-      
-      - name: Setup Node.js for frontend
-        uses: actions/setup-node@v4
-        with:
-          node-version: '24'
-          cache: 'pnpm'
-          cache-dependency-path: pnpm-lock.yaml
-          
-      - name: Install frontend dependencies
-        run: pnpm install
-          
-      - name: Build frontend
-        run: pnpm run build
-          
-      - name: Prepare deployment files
-        run: |
-          # Copy built frontend files to docs directory
-          cp -r dist/* docs/ || true
-          
-      - name: Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v4
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./docs
+          retention-days: 90

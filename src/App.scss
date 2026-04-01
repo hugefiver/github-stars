@@ -4,7 +4,9 @@
 // App component variables
 $app-max-width: 1200px;
 $app-padding: 20px;
-$font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+$font-family:
+  -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans',
+  'Helvetica Neue', sans-serif;
 $border-radius: 6px;
 $box-shadow-light: 0 1px 3px rgba(0, 0, 0, 0.05);
 $box-shadow-medium: 0 2px 6px rgba(0, 0, 0, 0.1);
@@ -37,7 +39,7 @@ $focus-shadow: 0 0 0 3px rgba(3, 102, 214, 0.3);
       position: absolute;
       top: 10px;
       right: 130px; // 减小与设置按钮的距离
-      
+
       .language-select {
         padding: 10px 12px; // 增加内边距以增加高度
         border: 1px solid $border-color;
@@ -83,7 +85,6 @@ $focus-shadow: 0 0 0 3px rgba(3, 102, 214, 0.3);
   }
 }
 
-
 // Settings button
 .settings-button {
   position: absolute;
@@ -128,7 +129,7 @@ $focus-shadow: 0 0 0 3px rgba(3, 102, 214, 0.3);
   width: 100%;
   max-width: 100%;
   margin: 0;
-  
+
   @media (max-width: 768px) {
     min-width: 320px;
   }
@@ -145,7 +146,9 @@ $focus-shadow: 0 0 0 3px rgba(3, 102, 214, 0.3);
   &:focus {
     outline: none;
     border-color: $link-color;
-    box-shadow: inset 0 1px 0 rgba(225, 228, 232, 0.2), $focus-shadow;
+    box-shadow:
+      inset 0 1px 0 rgba(225, 228, 232, 0.2),
+      $focus-shadow;
   }
 }
 
@@ -195,7 +198,7 @@ $focus-shadow: 0 0 0 3px rgba(3, 102, 214, 0.3);
 
 .toggle-slider:before {
   position: absolute;
-  content: "";
+  content: '';
   height: 18px;
   width: 18px;
   left: 3px;
@@ -294,6 +297,24 @@ input:checked + .toggle-slider:before {
   line-height: 1.5;
 }
 
+.toggle-details {
+  background: none;
+  border: 1px solid $border-color;
+  border-radius: $border-radius;
+  padding: 2px 10px;
+  cursor: pointer;
+  color: $secondary-text-color;
+  font-size: 0.75em;
+  transition:
+    color 0.2s ease,
+    border-color 0.2s ease;
+
+  &:hover {
+    color: $link-color;
+    border-color: $link-color;
+  }
+}
+
 // Repository details section
 .repo-details-section {
   display: flex;
@@ -332,7 +353,7 @@ input:checked + .toggle-slider:before {
 // Repository languages compact
 .repo-languages-compact {
   position: relative; // 使浮窗能相对定位
-  
+
   .language-tooltip {
     position: absolute;
     top: 100%;
@@ -345,7 +366,7 @@ input:checked + .toggle-slider:before {
     z-index: 10;
     white-space: nowrap;
     margin-top: 4px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
     max-height: 200px;
     overflow-y: auto;
 
@@ -360,7 +381,7 @@ input:checked + .toggle-slider:before {
   position: relative;
   width: 100%;
   max-width: 300px;
-  
+
   .dropdown-trigger {
     position: relative;
     display: flex;
@@ -369,13 +390,13 @@ input:checked + .toggle-slider:before {
     border-radius: 6px;
     background-color: white;
     padding: 4px;
-    
+
     .selected-tags {
       display: flex;
       flex-wrap: wrap;
       gap: 4px;
       padding: 0 4px;
-      
+
       .selected-tag {
         display: inline-flex;
         align-items: center;
@@ -384,7 +405,7 @@ input:checked + .toggle-slider:before {
         padding: 2px 8px;
         font-size: 0.8em;
         gap: 4px;
-        
+
         .tag-remove {
           margin-left: 4px;
           background: none;
@@ -397,13 +418,13 @@ input:checked + .toggle-slider:before {
           display: flex;
           align-items: center;
           justify-content: center;
-          
+
           &:hover {
             background-color: #d1d5da;
           }
         }
       }
-      
+
       .dropdown-input {
         border: none;
         outline: none;
@@ -412,20 +433,20 @@ input:checked + .toggle-slider:before {
         flex: 1;
         min-width: 100px;
         font-size: 14px;
-        
+
         &:focus {
           box-shadow: none;
         }
       }
     }
-    
+
     .dropdown-controls {
       display: flex;
       align-items: center;
       gap: 8px;
       margin-top: 4px;
       padding: 0 4px 4px;
-      
+
       .clear-all {
         background: none;
         border: none;
@@ -433,12 +454,12 @@ input:checked + .toggle-slider:before {
         cursor: pointer;
         font-size: 0.8em;
         padding: 2px 8px;
-        
+
         &:hover {
           text-decoration: underline;
         }
       }
-      
+
       .dropdown-arrow {
         position: absolute;
         right: 8px;
@@ -450,7 +471,7 @@ input:checked + .toggle-slider:before {
       }
     }
   }
-  
+
   .dropdown-options {
     position: absolute;
     top: 100%;
@@ -464,40 +485,40 @@ input:checked + .toggle-slider:before {
     overflow-y: auto;
     z-index: 10;
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
-    
+
     .option {
       padding: 8px 12px;
       cursor: pointer;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      
+
       &.selected {
         background-color: #f1f8ff;
         font-weight: 500;
       }
-      
+
       .tag-name {
         flex: 1;
         margin-right: 8px;
       }
-      
+
       .tag-count {
         color: #6a737d;
         font-weight: 500;
         font-size: 0.9em;
       }
-      
+
       .checkmark {
         color: #0366d6;
         margin-left: 8px;
       }
-      
+
       &:hover:not(.selected) {
         background-color: #f6f8fa;
       }
     }
-    
+
     .no-options {
       padding: 8px 12px;
       color: #586069;
@@ -714,7 +735,9 @@ input:checked + .toggle-slider:before {
   &:focus {
     outline: none;
     border-color: $link-color;
-    box-shadow: inset 0 1px 0 rgba(225, 228, 232, 0.2), $focus-shadow;
+    box-shadow:
+      inset 0 1px 0 rgba(225, 228, 232, 0.2),
+      $focus-shadow;
   }
 }
 
@@ -783,8 +806,12 @@ input:checked + .toggle-slider:before {
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 .load-more-hint {
@@ -807,72 +834,6 @@ input:checked + .toggle-slider:before {
   border-radius: $border-radius;
   margin: 10px 0;
 }
-
-// Language colors
-.lang-JavaScript { background-color: #f1e05a; color: #333; }
-.lang-TypeScript { background-color: #3178c6; }
-.lang-Python { background-color: #3572A5; }
-.lang-Java { background-color: #b07219; }
-.lang-CSS { background-color: #563d7c; }
-.lang-HTML { background-color: #e34c26; }
-.lang-Go { background-color: #00ADD8; }
-.lang-Rust { background-color: #dea584; color: #333; }
-.lang-C { background-color: #555555; }
-.lang-Cpp { background-color: #f34b7d; }
-.lang-Shell { background-color: #89e051; color: #333; }
-.lang-PHP { background-color: #4F5D95; }
-.lang-Ruby { background-color: #701516; }
-.lang-Swift { background-color: #ffac45; color: #333; }
-.lang-Kotlin { background-color: #F18E33; }
-.lang-Scala { background-color: #c22d40; }
-.lang-Objective-C { background-color: #438eff; }
-.lang-Dart { background-color: #00B4AB; }
-.lang-Vue { background-color: #2c3e50; }
-.lang-Svelte { background-color: #ff3e00; }
-.lang-Perl { background-color: #0298c3; }
-.lang-Lua { background-color: #000080; }
-.lang-Haskell { background-color: #5e5086; }
-.lang-Clojure { background-color: #db5855; }
-.lang-Elixir { background-color: #6e4a7e; }
-.lang-F\# { background-color: #b845fc; }
-.lang-Erlang { background-color: #A90533; }
-.lang-OCaml { background-color: #ec6813; }
-.lang-Crystal { background-color: #000100; }
-.lang-Fortran { background-color: #4d41b1; }
-.lang-Assembly { background-color: #6E4C13; }
-.lang-Vim-script { background-color: #199f4b; }
-.lang-Dockerfile { background-color: #384d54; }
-.lang-Makefile { background-color: #427819; }
-.lang-Batchfile { background-color: #C1F12E; color: #333; }
-.lang-PowerShell { background-color: #012456; }
-.lang-TSQL { background-color: #e38c00; }
-.lang-CoffeeScript { background-color: #244776; }
-.lang-Julia { background-color: #a270ba; }
-.lang-HCL { background-color: #54341d; }
-.lang-TeX { background-color: #3D6117; }
-.lang-CMake { background-color: #DA3434; }
-.lang-Proto { background-color: #8b6bb4; }
-.lang-YAML { background-color: #cb171e; }
-.lang-JSON { background-color: #292929; }
-.lang-XML { background-color: #0060ac; }
-.lang-Markdown { background-color: #083fa1; }
-.lang-TOML { background-color: #9c4221; }
-.lang-INI { background-color: #d1dbe0; color: #333; }
-.lang-SQL { background-color: #336790; }
-.lang-GraphQL { background-color: #e10098; }
-.lang-SCSS { background-color: #c6538c; }
-.lang-Less { background-color: #1d365d; }
-.lang-Stylus { background-color: #ff6347; }
-.lang-Bash { background-color: #4eaa25; }
-.lang-Zsh { background-color: #89e051; color: #333; }
-.lang-Fish { background-color: #4aae47; }
-.lang-Other { background-color: $secondary-text-color; }
-
-// Linter workarounds
-.lang-Dummy1 { background-color: #fff; }
-.lang-Dummy2 { background-color: #000; }
-.lang-Dummy2::before { content: ''; }
-.lang-Dummy3 { background-color: #eee; }
 
 // Repository additional info
 .repo-additional-info {
@@ -909,11 +870,11 @@ input:checked + .toggle-slider:before {
 
 .repo-info-value {
   color: $text-color;
-  
+
   a {
     color: $link-color;
     text-decoration: none;
-    
+
     &:hover {
       text-decoration: underline;
     }
@@ -1078,7 +1039,7 @@ input:checked + .toggle-slider:before {
   color: $link-color;
   text-decoration: none;
   font-weight: 500;
-  
+
   &:hover {
     text-decoration: underline;
   }
@@ -1095,38 +1056,38 @@ input:checked + .toggle-slider:before {
   .app {
     padding: 10px;
   }
-  
+
   .controls {
     flex-direction: column;
   }
-  
-  .search-box {
+
+  .search-input-container {
     min-width: 100%;
   }
-  
+
   .filters {
     width: 100%;
   }
-  
+
   .repo-header {
     flex-direction: column;
     align-items: flex-start;
   }
-  
+
   .repo-stats {
     flex-direction: column;
     gap: 8px;
   }
-  
+
   .settings-button {
     position: static;
     margin-top: 10px;
   }
-  
+
   .modal-content {
     width: 95%;
   }
-  
+
   .repo-details-grid {
     grid-template-columns: 1fr;
   }

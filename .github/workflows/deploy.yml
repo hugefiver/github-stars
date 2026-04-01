@@ -1,0 +1,85 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [master]
+  workflow_run:
+    workflows: ['Fetch Starred Repositories']
+    types: [completed]
+    branches: [master]
+
+concurrency:
+  group: deploy-pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    if: >-
+      github.event_name == 'push' ||
+      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success')
+    permissions:
+      contents: write
+      pages: write
+      id-token: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download data from triggering workflow run
+        if: github.event_name == 'workflow_run'
+        uses: actions/download-artifact@v4
+        with:
+          name: starred-repos-data
+          path: ./docs/data/
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Download data from latest fetch run
+        if: github.event_name == 'push'
+        uses: dawidd6/action-download-artifact@bf251b5aa9c2f7eeb574a96ee720e24f801b7c11 # v6
+        with:
+          workflow: fetch-starred-repos.yml
+          name: starred-repos-data
+          path: ./docs/data/
+          branch: master
+          if_no_artifact_found: warn
+
+      - name: Verify data files exist
+        run: |
+          if [ ! -f ./docs/data/starred-repos.json ]; then
+            echo "::warning::No data files found. Deploy will proceed with empty data."
+            mkdir -p ./docs/data
+            echo "[]" > ./docs/data/starred-repos.json
+            echo "[]" > ./docs/data/starred-repos-simple.json
+          else
+            echo "Data files found:"
+            ls -lh ./docs/data/
+          fi
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Build frontend
+        run: pnpm run build
+
+      - name: Prepare deployment
+        run: cp -r dist/* docs/ || true
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./docs

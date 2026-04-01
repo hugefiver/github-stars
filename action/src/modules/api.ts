@@ -1,12 +1,7 @@
-import { graphql } from "@octokit/graphql";
-import { GraphQLResponse } from "../types/github";
+import { graphql } from '@octokit/graphql';
+import { GraphQLResponse } from '../types/github';
 
-// GitHub API配置接口
-export interface ApiConfig {
-  githubToken: string;
-  username: string;
-  batchSize: number;
-}
+export type GraphqlClient = ReturnType<typeof graphql.defaults>;
 
 // GraphQL查询语句
 export const STARRED_REPOS_QUERY = `
@@ -114,8 +109,7 @@ export const STARRED_REPOS_QUERY = `
   }
 `;
 
-// 创建带认证的GraphQL客户端
-export function createGraphqlClient(token: string) {
+export function createGraphqlClient(token: string): GraphqlClient {
   return graphql.defaults({
     headers: {
       authorization: `token ${token}`,
@@ -123,10 +117,9 @@ export function createGraphqlClient(token: string) {
   });
 }
 
-// 获取starred repositories的函数
 export async function fetchStarredRepositories(
-  graphqlWithAuth: any,
+  graphqlWithAuth: GraphqlClient,
   variables: { username: string; cursor: string | null; requestSize: number }
 ): Promise<GraphQLResponse> {
-  return await graphqlWithAuth(STARRED_REPOS_QUERY, variables);
+  return (await graphqlWithAuth(STARRED_REPOS_QUERY, variables)) as GraphQLResponse;
 }
