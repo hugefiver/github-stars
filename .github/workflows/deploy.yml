@@ -38,7 +38,7 @@ jobs:
 
       - name: Download data from latest fetch run
         if: github.event_name == 'push'
-        uses: dawidd6/action-download-artifact@bf251b5aa9c2f7eeb574a96ee720e24f801b7c11 # v6
+        uses: dawidd6/action-download-artifact@8a338493df3d275e4a7a63bcff3b8fe97e51a927 # v19
         with:
           workflow: fetch-starred-repos.yml
           name: starred-repos-data
