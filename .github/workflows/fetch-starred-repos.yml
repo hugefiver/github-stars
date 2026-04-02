@@ -35,7 +35,7 @@ jobs:
           batch-size: ${{ github.event.inputs.batch-size || '50' }}
 
       - name: Upload data artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: starred-repos-data
           path: ./docs/data/
