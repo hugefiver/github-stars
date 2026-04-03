@@ -12,8 +12,8 @@ dependencies:
     specifier: ^9.0.0
     version: 9.0.0
   '@octokit/graphql':
-    specifier: ^9.0.1
-    version: 9.0.1
+    specifier: ^9.0.3
+    version: 9.0.3
   '@octokit/rest':
     specifier: ^22.0.0
     version: 22.0.0
@@ -115,8 +115,8 @@ packages:
     engines: {node: '>= 20'}
     dependencies:
       '@octokit/auth-token': 6.0.0
-      '@octokit/graphql': 9.0.1
-      '@octokit/request': 10.0.3
+      '@octokit/graphql': 9.0.3
+      '@octokit/request': 10.0.8
       '@octokit/request-error': 7.0.0
       '@octokit/types': 14.1.0
       before-after-hook: 4.0.0
@@ -136,28 +136,11 @@ packages:
       universal-user-agent: 7.0.3
     dev: false
 
-  /@octokit/endpoint@11.0.0:
-    resolution: {integrity: sha512-hoYicJZaqISMAI3JfaDr1qMNi48OctWuOih1m80bkYow/ayPw6Jj52tqWJ6GEoFTk1gBqfanSoI1iY99Z5+ekQ==}
-    engines: {node: '>= 20'}
-    dependencies:
-      '@octokit/types': 14.1.0
-      universal-user-agent: 7.0.3
-    dev: false
-
   /@octokit/endpoint@11.0.3:
     resolution: {integrity: sha512-FWFlNxghg4HrXkD3ifYbS/IdL/mDHjh9QcsNyhQjN8dplUoZbejsdpmuqdA76nxj2xoWPs7p8uX2SNr9rYu0Ag==}
     engines: {node: '>= 20'}
     dependencies:
       '@octokit/types': 16.0.0
-      universal-user-agent: 7.0.3
-    dev: false
-
-  /@octokit/graphql@9.0.1:
-    resolution: {integrity: sha512-j1nQNU1ZxNFx2ZtKmL4sMrs4egy5h65OMDmSbVyuCzjOcwsHq6EaYjOTGXPQxgfiN8dJ4CriYHk6zF050WEULg==}
-    engines: {node: '>= 20'}
-    dependencies:
-      '@octokit/request': 10.0.3
-      '@octokit/types': 14.1.0
       universal-user-agent: 7.0.3
     dev: false
 
@@ -239,17 +222,6 @@ packages:
     engines: {node: '>= 20'}
     dependencies:
       '@octokit/types': 16.0.0
-    dev: false
-
-  /@octokit/request@10.0.3:
-    resolution: {integrity: sha512-V6jhKokg35vk098iBqp2FBKunk3kMTXlmq+PtbV9Gl3TfskWlebSofU9uunVKhUN7xl+0+i5vt0TGTG8/p/7HA==}
-    engines: {node: '>= 20'}
-    dependencies:
-      '@octokit/endpoint': 11.0.0
-      '@octokit/request-error': 7.0.0
-      '@octokit/types': 14.1.0
-      fast-content-type-parse: 3.0.0
-      universal-user-agent: 7.0.3
     dev: false
 
   /@octokit/request@10.0.8:
