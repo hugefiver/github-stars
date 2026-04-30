@@ -1,6 +1,7 @@
 {
   "name": "github-stars-search",
   "private": true,
+  "license": "LicenseRef-AAAPL",
   "version": "0.0.0",
   "type": "module",
   "scripts": {

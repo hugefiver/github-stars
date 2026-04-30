@@ -16,7 +16,7 @@
     "repositories"
   ],
   "author": "GitHub Stars Search",
-  "license": "MIT",
+  "license": "LicenseRef-AAAPL",
   "dependencies": {
     "@actions/core": "^1.11.1",
     "@actions/github": "^9.1.1",

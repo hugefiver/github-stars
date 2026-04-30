@@ -235,3 +235,7 @@ github-stars-search/
 ├── .github/workflows/     # GitHub Actions 工作流
 └── scripts/              # 测试和模拟脚本
 ```
+
+## License
+
+[Anti American AI Public License](https://github.com/hugefiver/AAAPL) - See [LICENSE](LICENSE) for details.
