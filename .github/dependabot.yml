@@ -14,6 +14,9 @@ updates:
     directory: "/action"
     schedule:
       interval: "weekly"
+    ignore:
+      - dependency-name: "@actions/core"
+        versions: [">=3.0.0"]
 
   - package-ecosystem: "github-actions"
     directory: "/"
