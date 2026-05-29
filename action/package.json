@@ -6,7 +6,7 @@
   "types": "dist/index.d.ts",
   "scripts": {
     "build": "ncc build src/index.ts -o dist --minify",
-    "build:builder": "tsc build.ts --outDir . --target esnext --module commonjs --moduleResolution node --esModuleInterop --allowSyntheticDefaultImports --strict --skipLibCheck --forceConsistentCasingInFileNames",
+    "build:builder": "tsc build.ts --outDir . --target esnext --module node16 --moduleResolution node16 --esModuleInterop --allowSyntheticDefaultImports --strict --skipLibCheck --forceConsistentCasingInFileNames",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [
@@ -18,15 +18,15 @@
   "author": "GitHub Stars Search",
   "license": "LicenseRef-AAAPL",
   "dependencies": {
-    "@actions/core": "^1.11.1",
+    "@actions/core": "^2.0.3",
     "@actions/github": "^9.1.1",
     "@octokit/graphql": "^9.0.3",
     "@octokit/rest": "^22.0.1"
   },
   "devDependencies": {
-    "@types/node": "^25.8.0",
+    "@types/node": "^25.9.1",
     "@vercel/ncc": "^0.38.4",
     "ts-node": "^10.9.2",
-    "typescript": "^5.9.2"
+    "typescript": "^6.0.3"
   }
 }

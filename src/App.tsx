@@ -138,7 +138,7 @@ function App() {
     });
 
     result.sort((a, b) => {
-      let comparison = 0;
+      let comparison: number;
 
       if (sortBy === 'relevance' && searchResults.length > 0) {
         const scoreA = searchResults.find((r) => r.id === a.id)?.score || 0;
