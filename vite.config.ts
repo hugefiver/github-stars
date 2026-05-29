@@ -13,8 +13,10 @@ export default defineConfig({
       external: [],
       output: {
         format: 'es',
-        manualChunks: {
-          flexsearch: ['flexsearch'],
+        manualChunks(id) {
+          if (id.includes('flexsearch')) {
+            return 'flexsearch';
+          }
         },
       },
     },
