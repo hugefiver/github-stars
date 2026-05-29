@@ -6,7 +6,7 @@
   "types": "dist/index.d.ts",
   "scripts": {
     "build": "ncc build src/index.ts -o dist --minify",
-    "build:builder": "tsc build.ts --outDir . --target esnext --module commonjs --moduleResolution node --esModuleInterop --allowSyntheticDefaultImports --strict --skipLibCheck --forceConsistentCasingInFileNames",
+    "build:builder": "tsc build.ts --outDir . --target esnext --module node16 --moduleResolution node16 --esModuleInterop --allowSyntheticDefaultImports --strict --skipLibCheck --forceConsistentCasingInFileNames",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [
