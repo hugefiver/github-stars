@@ -20,7 +20,7 @@
   "dependencies": {
     "@actions/core": "^2.0.3",
     "@actions/github": "^9.1.1",
-    "@octokit/graphql": "^9.0.3",
+    "@octokit/graphql": "^9.0.5",
     "@octokit/rest": "^22.0.1"
   },
   "devDependencies": {
